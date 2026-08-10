@@ -16,6 +16,12 @@ export interface Collection {
   customerName: string;
   amount: number;
   date: string; // ISO date string
+  paymentMethod?: "Cash" | "Cheque" | "Transfer" | "Other";
+  referenceNumber?: string;
+  status?: "Confirmed" | "Pending Approval";
+  damageDeduction?: number;
+  specialDiscount?: number;
+  salesmanName?: string;
 }
 
 export interface Customer {
@@ -66,7 +72,17 @@ interface DashboardState {
   // Actions
   addCustomer: (customer: Omit<Customer, "id" | "joinedDate" | "totalPurchases">) => void;
   createInvoice: (invoice: Omit<Invoice, "id" | "date">) => void;
-  recordPayment: (payment: { invoiceId?: string; customerName: string; amount: number }) => void;
+  recordPayment: (payment: {
+    invoiceId?: string;
+    customerName: string;
+    amount: number;
+    paymentMethod?: "Cash" | "Cheque" | "Transfer" | "Other";
+    referenceNumber?: string;
+    status?: "Confirmed" | "Pending Approval";
+    damageDeduction?: number;
+    specialDiscount?: number;
+    salesmanName?: string;
+  }) => void;
   toggleLiveSimulation: () => void;
   triggerSimulatedTransaction: () => void;
 }
@@ -262,7 +278,17 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     });
   },
 
-  recordPayment: ({ invoiceId, customerName, amount }) => {
+  recordPayment: ({
+    invoiceId,
+    customerName,
+    amount,
+    paymentMethod = "Cash",
+    referenceNumber,
+    status = "Confirmed",
+    damageDeduction,
+    specialDiscount,
+    salesmanName,
+  }) => {
     const colId = `COL-${get().collections.length + 102}`;
     const today = new Date().toISOString().split("T")[0];
     const newCollection: Collection = {
@@ -271,6 +297,12 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       customerName,
       amount,
       date: today,
+      paymentMethod,
+      referenceNumber,
+      status,
+      damageDeduction,
+      specialDiscount,
+      salesmanName,
     };
 
     set((state) => {

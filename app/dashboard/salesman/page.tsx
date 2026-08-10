@@ -28,6 +28,12 @@ import {
   ChevronRight,
   Sparkles,
   LogOut,
+  ShieldCheck,
+  Check,
+  Copy,
+  Share2,
+  Printer,
+  FileCheck,
 } from "lucide-react";
 
 export default function SalesmanDashboardPage() {
@@ -73,6 +79,22 @@ export default function SalesmanDashboardPage() {
   const [referenceNumber, setReferenceNumber] = useState<string>("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Collection Confirmation & Receipt Modal state
+  const [isConfirmingCollection, setIsConfirmingCollection] = useState(false);
+  const [receiptData, setReceiptData] = useState<{
+    id: string;
+    customerName: string;
+    customerCode: string;
+    amount: number;
+    paymentMethod: string;
+    referenceNumber: string;
+    date: string;
+    time: string;
+    newBalance: number;
+    damageDeduction?: number;
+    specialDiscount?: number;
+  } | null>(null);
+
   // Handle direct navigation to Record Collection from Customer Card Collection Icon
   const handleOpenCollection = (customer: Customer) => {
     setSelectedCustomer(customer);
@@ -89,28 +111,62 @@ export default function SalesmanDashboardPage() {
     setDamageDeduction("0");
     setSpecialDiscount("0");
     setReferenceNumber("");
+    setIsConfirmingCollection(false);
+    setReceiptData(null);
     setActiveTab("record-collection");
   };
 
-  // Handle saving collection
-  const handleSaveCollection = (e: React.FormEvent) => {
+  // Handle step 1: open collection confirmation modal
+  const handleInitiateConfirmation = (e: React.FormEvent) => {
     e.preventDefault();
     if (!collCustomer) return;
 
     const collectedNum = parseFloat(amountCollected) || 0;
-    if (collectedNum <= 0) return;
+    if (collectedNum <= 0) {
+      setToastMessage("Please enter a valid collection amount.");
+      setTimeout(() => setToastMessage(null), 2000);
+      return;
+    }
+
+    setIsConfirmingCollection(true);
+  };
+
+  // Handle step 2: finalize collection & record to store
+  const handleFinalizeCollection = () => {
+    if (!collCustomer) return;
+
+    const collectedNum = parseFloat(amountCollected) || 0;
+    const damageNum = parseFloat(damageDeduction) || 0;
+    const discountNum = parseFloat(specialDiscount) || 0;
 
     recordPayment({
       customerName: collCustomer.name,
       amount: collectedNum,
+      paymentMethod,
+      referenceNumber: referenceNumber.trim() || undefined,
+      status: "Confirmed",
+      damageDeduction: damageNum > 0 ? damageNum : undefined,
+      specialDiscount: discountNum > 0 ? discountNum : undefined,
+      salesmanName: "Sales Manager",
     });
 
-    setToastMessage(`Collection of ₹${collectedNum.toLocaleString("en-IN")} recorded for ${collCustomer.name}!`);
+    const newReceipt = {
+      id: `COL-${collections.length + 102}`,
+      customerName: collCustomer.name,
+      customerCode: collCustomer.code || collCustomer.id,
+      amount: collectedNum,
+      paymentMethod,
+      referenceNumber: referenceNumber.trim() || "N/A",
+      date: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
+      time: new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
+      newBalance,
+      damageDeduction: damageNum,
+      specialDiscount: discountNum,
+    };
 
-    setTimeout(() => {
-      setToastMessage(null);
-      setActiveTab("customers");
-    }, 1500);
+    setReceiptData(newReceipt);
+    setIsConfirmingCollection(false);
+    setToastMessage(`Collection of ₹${collectedNum.toLocaleString("en-IN")} confirmed for ${collCustomer.name}!`);
   };
 
   // Handle Quick Add Customer submission
@@ -422,10 +478,11 @@ export default function SalesmanDashboardPage() {
               </div>
 
               {/* Form Container */}
-              <form onSubmit={handleSaveCollection} className="p-4 space-y-4 flex-1">
+              <form onSubmit={handleInitiateConfirmation} className="p-4 space-y-4 flex-1 pb-24">
                 {/* Alert Top Banner */}
-                <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-100 text-blue-900 text-xs font-medium leading-relaxed">
-                  Please ensure all details are correct before saving.
+                <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-100 text-blue-900 text-xs font-medium leading-relaxed flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#0F766E] shrink-0" />
+                  <span>Verify collection details and click Confirm Collection below to open final review.</span>
                 </div>
 
                 {/* Customer Input Box */}
@@ -619,20 +676,20 @@ export default function SalesmanDashboardPage() {
                 </div>
 
                 {/* Sticky Action Footer */}
-                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-3.5 flex items-center gap-3 z-40 max-w-lg mx-auto">
+                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-3.5 flex items-center gap-3 z-40 max-w-lg mx-auto shadow-lg">
                   <button
                     type="button"
                     onClick={() => setActiveTab("customers")}
-                    className="flex-1 h-11 border border-slate-300 rounded-xl text-xs font-bold text-[#0F766E] bg-white hover:bg-slate-50 transition-colors cursor-pointer"
+                    className="flex-1 h-11 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 h-11 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                    className="flex-[2] h-11 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
                   >
-                    <Banknote className="w-4 h-4 text-white" />
-                    <span>Save Collection</span>
+                    <ShieldCheck className="w-4 h-4 text-emerald-200" />
+                    <span>Confirm Collection ({collectedVal > 0 ? `₹${collectedVal.toLocaleString("en-IN")}` : "₹0"})</span>
                   </button>
                 </div>
               </form>
@@ -715,13 +772,25 @@ export default function SalesmanDashboardPage() {
 
               <div className="space-y-3">
                 {collections.map((col) => (
-                  <div key={col.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+                  <div key={col.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2">
                     <div className="flex justify-between items-start text-xs font-bold">
-                      <span className="text-slate-900">{col.customerName}</span>
+                      <div>
+                        <span className="text-slate-900 block">{col.customerName}</span>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-[#0F766E] text-[10px] font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-[#0F766E]" />
+                            {col.status || "Confirmed"}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-semibold">
+                            {col.paymentMethod || "Cash"}
+                          </span>
+                        </div>
+                      </div>
                       <span className="text-emerald-700 font-black text-sm">₹{col.amount.toLocaleString("en-IN")}</span>
                     </div>
-                    <div className="flex justify-between items-center text-[11px] text-slate-500">
-                      <span>Ref: {col.invoiceId}</span>
+
+                    <div className="flex justify-between items-center text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+                      <span>Ref: {col.referenceNumber || col.invoiceId}</span>
                       <span>{col.date}</span>
                     </div>
                   </div>
@@ -797,45 +866,210 @@ export default function SalesmanDashboardPage() {
           </div>
         )}
 
+        {/* ── MODAL: COLLECTION CONFIRMATION DRAWER ── */}
+        {isConfirmingCollection && collCustomer && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200 p-5 space-y-4">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center text-[#0F766E]">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 leading-tight">Confirm Collection</h3>
+                    <p className="text-[11px] text-slate-500 font-medium">Verify summary before recording</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsConfirmingCollection(false)}
+                  className="text-slate-400 hover:text-slate-600 p-1"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Breakdown Card */}
+              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200/80 space-y-2.5 text-xs">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-200">
+                  <span className="font-semibold text-slate-600">Customer</span>
+                  <span className="font-bold text-slate-900">{collCustomer.company || collCustomer.name}</span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-slate-600">Payment Method</span>
+                  <span className="font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200 text-[11px]">
+                    {paymentMethod}
+                  </span>
+                </div>
+
+                {referenceNumber && (
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-slate-600">Reference #</span>
+                    <span className="font-mono font-bold text-slate-800">{referenceNumber}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-slate-600">Previous Outstanding</span>
+                  <span className="font-bold text-slate-800">₹{currentOutstanding.toFixed(2)}</span>
+                </div>
+
+                {totalDeduction > 0 && (
+                  <div className="flex justify-between items-center text-amber-700">
+                    <span className="font-semibold">Total Deductions</span>
+                    <span className="font-bold">- ₹{totalDeduction.toFixed(2)}</span>
+                  </div>
+                )}
+
+                <div className="pt-2 border-t border-slate-200 flex justify-between items-center">
+                  <span className="font-bold text-slate-900">Amount Collected</span>
+                  <span className="text-base font-black text-emerald-700">₹{collectedVal.toFixed(2)}</span>
+                </div>
+
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="font-semibold text-slate-500">Updated Balance</span>
+                  <span className="font-bold text-slate-900">₹{newBalance.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Alert notice */}
+              <div className="p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-900 font-medium">
+                By confirming, this payment will be logged to customer ledger and synced with admin dashboard.
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmingCollection(false)}
+                  className="flex-1 h-11 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50 cursor-pointer transition-colors"
+                >
+                  Edit Details
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFinalizeCollection}
+                  className="flex-[1.5] h-11 bg-[#0F766E] text-white rounded-xl text-xs font-bold hover:bg-[#0F766E]/90 shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <Check className="w-4 h-4 text-white stroke-[3]" />
+                  <span>Confirm & Submit</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── MODAL: COLLECTION CONFIRMED RECEIPT VIEW ── */}
+        {receiptData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+            <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden border border-slate-200 p-5 space-y-4 text-center">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 text-[#0F766E] mx-auto flex items-center justify-center">
+                <FileCheck className="w-6 h-6" />
+              </div>
+
+              <div>
+                <h3 className="text-lg font-black text-slate-900">Collection Confirmed!</h3>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">Receipt #{receiptData.id}</p>
+              </div>
+
+              <div className="bg-emerald-50/60 rounded-xl p-4 border border-emerald-100 text-left space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-semibold">Customer:</span>
+                  <span className="font-bold text-slate-900">{receiptData.customerName}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-semibold">Amount Paid:</span>
+                  <span className="font-extrabold text-emerald-700 text-sm">
+                    ₹{receiptData.amount.toLocaleString("en-IN")}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-semibold">Payment Mode:</span>
+                  <span className="font-bold text-slate-800">{receiptData.paymentMethod}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-semibold">Ref #:</span>
+                  <span className="font-mono font-bold text-slate-700">{receiptData.referenceNumber}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-semibold">Date & Time:</span>
+                  <span className="font-medium text-slate-700">
+                    {receiptData.date} • {receiptData.time}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      `COLLECTION RECEIPT\nReceipt #: ${receiptData.id}\nCustomer: ${receiptData.customerName}\nAmount: ₹${receiptData.amount}\nMode: ${receiptData.paymentMethod}\nDate: ${receiptData.date}`
+                    );
+                    setToastMessage("Receipt copied to clipboard!");
+                    setTimeout(() => setToastMessage(null), 1500);
+                  }}
+                  className="flex-1 h-10 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1 hover:bg-slate-50"
+                >
+                  <Copy className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Copy</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setReceiptData(null);
+                    setActiveTab("collections");
+                  }}
+                  className="flex-1 h-10 bg-[#0F766E] text-white rounded-xl text-xs font-bold hover:bg-[#0F766E]/90 shadow-xs"
+                >
+                  View Collections
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── BOTTOM NAVIGATION BAR (MATCHES IMAGE 1 SCREENSHOT) ── */}
-        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200/90 py-2 px-6 flex items-center justify-around max-w-lg mx-auto shadow-lg">
-          {/* Home Tab */}
-          <button
-            onClick={() => setActiveTab("home")}
-            className={`flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${
-              activeTab === "home" ? "text-[#0F766E]" : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            <Home className="w-5 h-5" />
-            <span className="text-[11px] font-bold">Home</span>
-          </button>
+        {activeTab !== "record-collection" && (
+          <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200/90 py-2 px-6 flex items-center justify-around max-w-lg mx-auto shadow-lg">
+            {/* Home Tab */}
+            <button
+              onClick={() => setActiveTab("home")}
+              className={`flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${
+                activeTab === "home" ? "text-[#0F766E]" : "text-slate-400 hover:text-slate-600"
+              }`}
+            >
+              <Home className="w-5 h-5" />
+              <span className="text-[11px] font-bold">Home</span>
+            </button>
 
-          {/* Customers Tab (Active Highlighted Pill) */}
-          <button
-            onClick={() => setActiveTab("customers")}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-full cursor-pointer transition-all ${
-              activeTab === "customers"
-                ? "bg-[#E6F4F1] text-[#0F766E]"
-                : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            <Users className="w-5 h-5" />
-            <span className="text-[11px] font-bold">Customers</span>
-          </button>
+            {/* Customers Tab (Active Highlighted Pill) */}
+            <button
+              onClick={() => setActiveTab("customers")}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-full cursor-pointer transition-all ${
+                activeTab === "customers"
+                  ? "bg-[#E6F4F1] text-[#0F766E]"
+                  : "text-slate-400 hover:text-slate-600"
+              }`}
+            >
+              <Users className="w-5 h-5" />
+              <span className="text-[11px] font-bold">Customers</span>
+            </button>
 
-          {/* Collections Tab */}
-          <button
-            onClick={() => setActiveTab("collections")}
-            className={`flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${
-              activeTab === "collections" || activeTab === "record-collection"
-                ? "text-[#0F766E]"
-                : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            <Wallet className="w-5 h-5" />
-            <span className="text-[11px] font-bold">Collections</span>
-          </button>
-        </nav>
+            {/* Collections Tab */}
+            <button
+              onClick={() => setActiveTab("collections")}
+              className={`flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${
+                activeTab === "collections"
+                  ? "text-[#0F766E]"
+                  : "text-slate-400 hover:text-slate-600"
+              }`}
+            >
+              <Wallet className="w-5 h-5" />
+              <span className="text-[11px] font-bold">Collections</span>
+            </button>
+          </nav>
+        )}
       </div>
     </AuthGuard>
   );
