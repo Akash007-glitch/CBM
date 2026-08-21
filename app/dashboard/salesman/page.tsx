@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/auth/AuthGuard";
-import { useLogout } from "@/store/authStore";
+import { useLogout, useUser } from "@/store/authStore";
 import { useDashboardStore, Customer } from "@/store/dashboardStore";
 import {
   Menu,
@@ -50,11 +50,24 @@ export default function SalesmanDashboardPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   // Store data & actions
+  const initialize = useDashboardStore((s) => s.initialize);
+  const destroy = useDashboardStore((s) => s.destroy);
   const customers = useDashboardStore((s) => s.customers);
-  const collections = useDashboardStore((s) => s.collections);
+  const salesmen = useDashboardStore((s) => s.salesmen);
+  const payments = useDashboardStore((s) => s.payments);
   const invoices = useDashboardStore((s) => s.invoices);
   const recordPayment = useDashboardStore((s) => s.recordPayment);
   const addCustomer = useDashboardStore((s) => s.addCustomer);
+
+  // Resolve the current salesman's row ID (needed for payment RLS)
+  const currentUser = useUser();
+  const currentSalesmanId = salesmen.find((s) => s.user_id === currentUser?.id)?.id ?? "";
+
+  // Fetch data from Supabase on mount
+  useEffect(() => {
+    initialize();
+    return () => destroy();
+  }, [initialize, destroy]);
 
   // Customer Directory Search & Filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -100,9 +113,9 @@ export default function SalesmanDashboardPage() {
     setSelectedCustomer(customer);
     setCollCustomer(customer);
 
-    const invTotal = customer.invoiceTotal ?? (customer.outstandingBalance > 0 ? customer.outstandingBalance + 1000 : 4500);
-    const prevPaid = customer.previouslyPaid ?? (customer.outstandingBalance > 0 ? 1000 : 0);
-    const currentBal = customer.outstandingBalance > 0 ? customer.outstandingBalance : Math.max(0, invTotal - prevPaid);
+    const invTotal = Number(customer.opening_balance) > 0 ? Number(customer.opening_balance) + 1000 : 4500;
+    const prevPaid = 0;
+    const currentBal = Math.max(0, invTotal - prevPaid);
 
     setCollInvoiceTotal(invTotal);
     setCollPrevPaid(prevPaid);
@@ -132,65 +145,84 @@ export default function SalesmanDashboardPage() {
   };
 
   // Handle step 2: finalize collection & record to store
-  const handleFinalizeCollection = () => {
+  const handleFinalizeCollection = async () => {
     if (!collCustomer) return;
 
     const collectedNum = parseFloat(amountCollected) || 0;
     const damageNum = parseFloat(damageDeduction) || 0;
     const discountNum = parseFloat(specialDiscount) || 0;
 
-    recordPayment({
-      customerName: collCustomer.name,
-      amount: collectedNum,
-      paymentMethod,
-      referenceNumber: referenceNumber.trim() || undefined,
-      status: "Confirmed",
-      damageDeduction: damageNum > 0 ? damageNum : undefined,
-      specialDiscount: discountNum > 0 ? discountNum : undefined,
-      salesmanName: "Sales Manager",
-    });
+    try {
+      if (!currentSalesmanId) {
+        throw new Error("Your salesman profile is not set up correctly. Please contact the admin.");
+      }
+      await recordPayment({
+        customer_id:      collCustomer.id,
+        salesman_id:      currentSalesmanId,
+        created_by:       currentUser?.id ?? "",
+        amount:           collectedNum,
+        payment_method:   paymentMethod.toLowerCase() as 'cash' | 'cheque' | 'bank_transfer' | 'upi' | 'other',
+        reference_number: referenceNumber.trim() || null,
+        notes:            damageNum > 0 || discountNum > 0
+                            ? `Damage: ${damageNum}, Discount: ${discountNum}`
+                            : null,
+        payment_date:     new Date().toISOString().split("T")[0],
+      });
 
-    const newReceipt = {
-      id: `COL-${collections.length + 102}`,
-      customerName: collCustomer.name,
-      customerCode: collCustomer.code || collCustomer.id,
-      amount: collectedNum,
-      paymentMethod,
-      referenceNumber: referenceNumber.trim() || "N/A",
-      date: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
-      time: new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
-      newBalance,
-      damageDeduction: damageNum,
-      specialDiscount: discountNum,
-    };
+      const newReceipt = {
+        id: `COL-${payments.length + 102}`,
+        customerName: collCustomer.name,
+        customerCode: collCustomer.customer_code || collCustomer.id.slice(0, 8),
+        amount: collectedNum,
+        paymentMethod,
+        referenceNumber: referenceNumber.trim() || "N/A",
+        date: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
+        time: new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
+        newBalance,
+        damageDeduction: damageNum,
+        specialDiscount: discountNum,
+      };
 
-    setReceiptData(newReceipt);
-    setIsConfirmingCollection(false);
-    setToastMessage(`Collection of ₹${collectedNum.toLocaleString("en-IN")} confirmed for ${collCustomer.name}!`);
+      setReceiptData(newReceipt);
+      setIsConfirmingCollection(false);
+      setToastMessage(`Collection of ₹${collectedNum.toLocaleString("en-IN")} confirmed for ${collCustomer.name}!`);
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to record payment. Please try again.";
+      setToastMessage(`Error: ${msg}`);
+      setTimeout(() => setToastMessage(null), 4000);
+      setIsConfirmingCollection(false);
+    }
   };
 
   // Handle Quick Add Customer submission
-  const handleCreateCustomer = (e: React.FormEvent) => {
+  const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCompanyName.trim()) return;
 
-    addCustomer({
-      name: newCompanyName.trim(),
-      company: newCompanyName.trim(),
-      email: `${newCompanyName.toLowerCase().replace(/[^a-z0-9]/g, "")}@company.com`,
-      phone: newPhone.trim() || "+91 98000 00000",
-      outstandingBalance: 0,
-      status: "Active",
-      location: newCity.trim() || "Mumbai",
-      lastInteraction: "Just now",
-    });
+    try {
+      await addCustomer({
+        name:                 newCompanyName.trim(),
+        email:                null,
+        phone:                newPhone.trim() || null,
+        city:                 newCity.trim() || null,
+        is_active:            true,
+        opening_balance:      0,
+        credit_limit:         0,
+        assigned_salesman_id: currentSalesmanId || null,
+      });
 
-    setNewCompanyName("");
-    setNewCity("");
-    setNewPhone("");
-    setIsAddCustomerOpen(false);
-    setToastMessage(`New Customer "${newCompanyName}" added to Directory!`);
-    setTimeout(() => setToastMessage(null), 2000);
+      setNewCompanyName("");
+      setNewCity("");
+      setNewPhone("");
+      setIsAddCustomerOpen(false);
+      setToastMessage(`New Customer "${newCompanyName}" added to Directory!`);
+      setTimeout(() => setToastMessage(null), 2000);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to add customer.";
+      setToastMessage(`Error: ${msg}`);
+      setTimeout(() => setToastMessage(null), 4000);
+    }
   };
 
   // Filtered customer list
@@ -198,14 +230,13 @@ export default function SalesmanDashboardPage() {
     const q = searchQuery.toLowerCase();
     const matchesSearch =
       cust.name.toLowerCase().includes(q) ||
-      cust.company.toLowerCase().includes(q) ||
-      (cust.location && cust.location.toLowerCase().includes(q)) ||
-      (cust.code && cust.code.toLowerCase().includes(q)) ||
-      cust.phone.includes(q);
+      (cust.city && cust.city.toLowerCase().includes(q)) ||
+      (cust.customer_code && cust.customer_code.toLowerCase().includes(q)) ||
+      (cust.phone && cust.phone.includes(q));
 
     const matchesStatus =
       statusFilter === "all" ||
-      cust.status.toLowerCase() === statusFilter.toLowerCase();
+      (statusFilter === "Inactive" ? !cust.is_active : cust.is_active);
 
     return matchesSearch && matchesStatus;
   });
@@ -215,8 +246,8 @@ export default function SalesmanDashboardPage() {
   const discountNum = parseFloat(specialDiscount) || 0;
   const totalDeduction = damageNum + discountNum;
   const currentOutstanding = collCustomer
-    ? collCustomer.outstandingBalance > 0
-      ? collCustomer.outstandingBalance
+    ? Number(collCustomer.opening_balance) > 0
+      ? Number(collCustomer.opening_balance)
       : Math.max(0, collInvoiceTotal - collPrevPaid)
     : 3500;
   const collectedVal = parseFloat(amountCollected) || 0;
@@ -355,9 +386,10 @@ export default function SalesmanDashboardPage() {
               {/* Customer Cards List */}
               <div className="space-y-3.5">
                 {filteredCustomers.map((cust) => {
-                  const isOverdue = cust.status === "Overdue";
-                  const isCurrent = cust.status === "Current";
-                  const isInactive = cust.status === "Inactive";
+                  const isOverdue  = !cust.is_active;
+                  const isCurrent  = cust.is_active;
+                  const isInactive = !cust.is_active;
+                  const statusLabel = cust.is_active ? "Active" : "Inactive";
 
                   return (
                     <div
@@ -368,11 +400,11 @@ export default function SalesmanDashboardPage() {
                       <div className="flex items-start justify-between">
                         <div>
                           <h3 className="text-base font-bold text-slate-900 leading-tight">
-                            {cust.company || cust.name}
+                            {cust.name}
                           </h3>
                           <div className="flex items-center gap-1 mt-1 text-xs text-slate-500 font-medium">
                             <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span>{cust.location || "Mumbai"}</span>
+                            <span>{cust.city || "—"}</span>
                           </div>
                         </div>
 
@@ -388,7 +420,7 @@ export default function SalesmanDashboardPage() {
                               : "bg-emerald-100 text-emerald-800"
                           }`}
                         >
-                          {cust.status}
+                          {statusLabel}
                         </span>
                       </div>
 
@@ -400,14 +432,14 @@ export default function SalesmanDashboardPage() {
                           </span>
                           <span
                             className={`text-base font-extrabold ${
-                              cust.outstandingBalance > 0
+                              Number(cust.opening_balance) > 0
                                 ? isOverdue
                                   ? "text-red-600"
                                   : "text-slate-900"
                                 : "text-slate-400"
                             }`}
                           >
-                            ₹ {cust.outstandingBalance.toLocaleString("en-IN")}
+                            ₹ {Number(cust.opening_balance).toLocaleString("en-IN")}
                           </span>
                         </div>
 
@@ -416,7 +448,7 @@ export default function SalesmanDashboardPage() {
                             LAST INTERACTION
                           </span>
                           <span className="text-xs font-semibold text-slate-700">
-                            {cust.lastInteraction || "2 days ago"}
+                            {new Date(cust.updated_at).toLocaleDateString("en-IN") || "—"}
                           </span>
                         </div>
                       </div>
@@ -500,7 +532,7 @@ export default function SalesmanDashboardPage() {
                     >
                       {customers.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.company || c.name} ({c.code || c.id})
+                          {c.name} ({c.customer_code || c.id.slice(0, 8)})
                         </option>
                       ))}
                     </select>
@@ -721,7 +753,7 @@ export default function SalesmanDashboardPage() {
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">My Collections</span>
                     <p className="text-2xl font-black text-slate-900 mt-1">
-                      ₹{collections.reduce((sum, c) => sum + c.amount, 0).toLocaleString("en-IN")}
+                      ₹{payments.reduce((sum: number, c: {amount: number}) => sum + Number(c.amount), 0).toLocaleString("en-IN")}
                     </p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
@@ -771,27 +803,27 @@ export default function SalesmanDashboardPage() {
               </div>
 
               <div className="space-y-3">
-                {collections.map((col) => (
+                {payments.map((col) => (
                   <div key={col.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2">
                     <div className="flex justify-between items-start text-xs font-bold">
                       <div>
-                        <span className="text-slate-900 block">{col.customerName}</span>
+                        <span className="text-slate-900 block">{col.customer_id}</span>
                         <div className="flex items-center gap-1.5 mt-1">
                           <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-[#0F766E] text-[10px] font-bold flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3 text-[#0F766E]" />
-                            {col.status || "Confirmed"}
+                            Confirmed
                           </span>
                           <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-semibold">
-                            {col.paymentMethod || "Cash"}
+                            {col.payment_method?.replace("_", " ") || "Cash"}
                           </span>
                         </div>
                       </div>
-                      <span className="text-emerald-700 font-black text-sm">₹{col.amount.toLocaleString("en-IN")}</span>
+                      <span className="text-emerald-700 font-black text-sm">₹{Number(col.amount).toLocaleString("en-IN")}</span>
                     </div>
 
                     <div className="flex justify-between items-center text-[11px] text-slate-500 pt-2 border-t border-slate-100">
-                      <span>Ref: {col.referenceNumber || col.invoiceId}</span>
-                      <span>{col.date}</span>
+                      <span>Ref: {col.reference_number || col.payment_number || col.id.slice(0, 8)}</span>
+                      <span>{new Date(col.payment_date).toLocaleDateString("en-IN")}</span>
                     </div>
                   </div>
                 ))}

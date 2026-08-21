@@ -32,10 +32,12 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div 
+      data-component="Modal"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
+        data-component="Modal/Panel"
         className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 flex flex-col gap-4"
         onClick={(e) => e.stopPropagation()}
       >

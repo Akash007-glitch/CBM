@@ -3,7 +3,7 @@ import { Shield, Lock } from "lucide-react";
 
 export const BrandHeader: React.FC = () => {
   return (
-    <div className="w-full text-center flex flex-col items-center mb-5">
+    <div data-component="BrandHeader" className="w-full text-center flex flex-col items-center mb-5">
       <div className="flex items-center justify-center gap-2.5 mb-1.5">
         {/* Custom Shield Emblem Icon */}
         <div className="relative w-8 h-8 rounded-lg bg-[#0D7663] text-white flex items-center justify-center shadow-xs">

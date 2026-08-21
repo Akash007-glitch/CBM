@@ -20,7 +20,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
   const hasError = Boolean(error);
 
   return (
-    <div>
+    <div data-component="PasswordInput">
       <div className="flex items-center justify-between mb-1.5">
         <label
           htmlFor="password-input"

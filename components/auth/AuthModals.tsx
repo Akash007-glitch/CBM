@@ -123,7 +123,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
         <div className="space-y-3 text-sm text-slate-600">
           <p>
             Shubh Enterprise is protected by{" "}
-            <span className="font-semibold text-slate-800">Kinetic Shield Technology</span>.
+
           </p>
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/70 text-xs space-y-1.5">
             {SECURITY_METRICS.map((metric) => (

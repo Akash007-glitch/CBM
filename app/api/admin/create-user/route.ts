@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
   // but we upsert here to also handle the requested role (e.g. 'admin').
   const { error: upsertError } = await adminClient
     .from("profiles")
-    .upsert({ id: newUserId, role }, { onConflict: "id" });
+    .upsert({ id: newUserId, role, email }, { onConflict: "id" });
 
   if (upsertError) {
     // User was created but role couldn't be set — return partial success
@@ -132,7 +132,35 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // ── 6. Return success ─────────────────────────────────────────────────────
+  // ── 6. Create salesmen row if role is 'salesman' ───────────────────────────
+  // The `my_salesman_id()` RLS helper looks up public.salesmen by user_id.
+  // Without this row the salesman's RLS policies evaluate to false and they
+  // see zero customers, invoices, and payments.
+  if (role === "salesman") {
+    const salesmanName = email.split("@")[0]; // fallback display name
+    const { error: salesmanError } = await adminClient
+      .from("salesmen")
+      .upsert(
+        { user_id: newUserId, name: salesmanName, email, is_active: true },
+        { onConflict: "user_id" }
+      );
+
+    if (salesmanError) {
+      console.error("[create-user] Failed to create salesmen row:", salesmanError);
+      // Non-fatal: profile is set correctly; admin can fix salesmen row manually.
+      return NextResponse.json(
+        {
+          warning: "User created but salesman profile could not be set. Create the salesmen row manually.",
+          userId: newUserId,
+          email,
+          role,
+        },
+        { status: 207 }
+      );
+    }
+  }
+
+  // ── 7. Return success ─────────────────────────────────────────────────────
   return NextResponse.json(
     { userId: newUserId, email, role },
     { status: 201 }

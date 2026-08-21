@@ -6,7 +6,7 @@ export const ROLE_CONFIGS: Record<UserRole, RoleDetail> = {
     label: "Admin",
     portalTitle: "Admin Portal",
     portalSubtitle: "Enter your administrative credentials",
-    defaultEmail: "[EMAIL_ADDRESS]",
+    defaultEmail: "",
     requiredRole: "admin",
   },
   salesman: {
@@ -14,7 +14,7 @@ export const ROLE_CONFIGS: Record<UserRole, RoleDetail> = {
     label: "Salesman",
     portalTitle: "Salesman Portal",
     portalSubtitle: "Enter your salesman credentials",
-    defaultEmail: "[EMAIL_ADDRESS]",
+    defaultEmail: "",
     requiredRole: "salesman",
   },
 };

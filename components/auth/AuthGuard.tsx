@@ -129,6 +129,7 @@ export function AuthGuard({
   // Spinner component (reused for both init and redirect states)
   const Spinner = () => (
     <div
+      data-component="AuthGuard/Spinner"
       role="status"
       aria-label="Loading"
       className="min-h-screen flex items-center justify-center bg-[#F4F7FA]"

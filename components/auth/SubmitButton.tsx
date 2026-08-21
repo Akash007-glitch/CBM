@@ -12,6 +12,7 @@ export const SubmitButton: React.FC<SubmitButtonProps> = ({
 }) => {
   return (
     <button
+      data-component="SubmitButton"
       type="submit"
       disabled={isLoading}
       className="w-full bg-[#0D7663] hover:bg-[#0B6353] active:bg-[#095244] text-white font-semibold text-sm rounded-lg py-3.5 px-4 flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all duration-200 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed mt-2"

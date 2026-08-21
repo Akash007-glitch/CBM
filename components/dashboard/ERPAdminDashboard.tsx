@@ -12,7 +12,6 @@ import {
   FileText,
   DollarSign,
   AlertCircle,
-  Zap,
 } from "lucide-react";
 import { useDashboardStore, useRealtimeMetrics } from "@/store/dashboardStore";
 
@@ -35,7 +34,6 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
   } = useRealtimeMetrics();
 
   const activities = useDashboardStore((s) => s.activities);
-  const triggerSimulatedTransaction = useDashboardStore((s) => s.triggerSimulatedTransaction);
 
   const [trendPeriod, setTrendPeriod] = useState("Last 30 Days");
 
@@ -47,7 +45,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
     }).format(val);
 
   return (
-    <div className="max-w-[1440px] mx-auto space-y-8">
+    <div data-component="ERPAdminDashboard" className="max-w-[1440px] mx-auto space-y-8">
       {/* Header Section matching Stitch Specification */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
@@ -60,16 +58,6 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Simulation Trigger button for testing live recalculation */}
-          <button
-            onClick={triggerSimulatedTransaction}
-            className="bg-[#EFF4FF] hover:bg-[#DCE9FF] border border-[#BDC9C6] text-[#005C55] px-3.5 h-10 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
-            title="Simulate incoming sale or payment in real-time"
-          >
-            <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-            <span>Simulate Live Event</span>
-          </button>
-
           {/* Add Customer Button */}
           <button
             onClick={onOpenAddCustomer}
@@ -299,16 +287,24 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
 
           <div className="flex-1 overflow-y-auto space-y-6 pr-2">
             {activities.slice(0, 5).map((act) => {
+              // Map action string to icon type
+              const isPayment = act.action?.includes('payment');
+              const isAlert   = act.action?.includes('overdue') || act.action?.includes('alert');
+
               let icon = <DollarSign className="w-4 h-4 text-[#0051D5]" />;
               let iconBg = "bg-[#E5EEFF]";
 
-              if (act.type === "alert") {
+              if (isAlert) {
                 icon = <AlertTriangle className="w-4 h-4 text-[#BA1A1A]" />;
                 iconBg = "bg-[#FFDAD6]/30";
-              } else if (act.type === "invoice") {
+              } else if (!isPayment) {
                 icon = <FileText className="w-4 h-4 text-[#0F766E]" />;
                 iconBg = "bg-[#E5EEFF]";
               }
+
+              const timeAgo = act.created_at
+                ? new Date(act.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+                : '';
 
               return (
                 <div key={act.id} className="flex gap-4 items-start">
@@ -318,9 +314,9 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
                     {icon}
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-[#0B1C30]">{act.title}</div>
-                    <div className="text-sm text-[#3E4947] font-normal">{act.subtitle}</div>
-                    <div className="text-xs text-[#6E7977] mt-1 font-medium">{act.timestamp}</div>
+                    <div className="text-sm font-semibold text-[#0B1C30]">{act.action?.replace(/_/g,' ')}</div>
+                    <div className="text-sm text-[#3E4947] font-normal">{act.description}</div>
+                    <div className="text-xs text-[#6E7977] mt-1 font-medium">{timeAgo}</div>
                   </div>
                 </div>
               );

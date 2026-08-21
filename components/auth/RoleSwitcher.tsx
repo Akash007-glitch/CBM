@@ -12,7 +12,7 @@ export const RoleSwitcher: React.FC<RoleSwitcherProps> = ({
   onRoleChange,
 }) => {
   return (
-    <div className="w-full bg-[#EFF3F6] p-1 rounded-xl flex items-center mb-7 border border-slate-200/60 shadow-xs">
+    <div data-component="RoleSwitcher" className="w-full bg-[#EFF3F6] p-1 rounded-xl flex items-center mb-7 border border-slate-200/60 shadow-xs">
       <button
         type="button"
         onClick={() => onRoleChange("admin")}

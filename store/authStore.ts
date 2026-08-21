@@ -4,6 +4,9 @@ import { supabase } from "@/app/lib/supabase";
 import { mapAuthError } from "@/lib/auth/validation";
 import { AuthStore } from "@/store/types";
 
+// Imported lazily to avoid circular dependency (authStore ← dashboardStore)
+import { useDashboardStore } from "@/store/dashboardStore";
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /**
@@ -148,6 +151,12 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true }, false, "auth/logout/pending");
 
         await supabase.auth.signOut();
+
+        // Tear down Realtime subscriptions and reset the dashboard store so
+        // that initialize() runs again on next login, fetching fresh data.
+        const { destroy } = useDashboardStore.getState();
+        destroy();
+        useDashboardStore.setState({ isInitialized: false, customers: [], salesmen: [], invoices: [], payments: [], activities: [] });
 
         set(
           {

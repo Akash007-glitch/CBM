@@ -98,7 +98,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ portalRole }) => {
 
 
   return (
-    <div className="w-full max-w-[420px] mx-auto flex flex-col items-center">
+    <div data-component="LoginForm" className="w-full max-w-[420px] mx-auto flex flex-col items-center">
       {/* Notification Toast */}
       {toast && (
         <Toast

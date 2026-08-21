@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, useLogout, useAuthLoading } from "@/store/authStore";
 import {
@@ -62,8 +62,15 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   const isLoading = useAuthLoading();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const isLiveSimulationActive = useDashboardStore((s) => s.isLiveSimulationActive);
-  const toggleLiveSimulation = useDashboardStore((s) => s.toggleLiveSimulation);
+  // Initialize the dashboard store when the shell mounts (i.e. on every login).
+  // This fetches customers, salesmen, invoices, etc. from Supabase.
+  const initialize = useDashboardStore((s) => s.initialize);
+  const destroy = useDashboardStore((s) => s.destroy);
+
+  useEffect(() => {
+    initialize();
+    return () => destroy();
+  }, [initialize, destroy]);
 
   const [displayName, setDisplayName] = useState<string>(roleLabel);
   const [initials, setInitials] = useState<string>(roleLabel.slice(0, 2).toUpperCase());
@@ -92,7 +99,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   };
 
   return (
-    <div className="flex h-screen bg-[#F8F9FF] overflow-hidden font-sans text-[#0B1C30]">
+    <div data-component="DashboardShell" className="flex h-screen bg-[#F8F9FF] overflow-hidden font-sans text-[#0B1C30]">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -104,6 +111,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
 
       {/* ── SideNavBar matching Stitch Specification ── */}
       <aside
+        data-component="DashboardShell/SideNavBar"
         className={`
           fixed inset-y-0 left-0 z-40 flex flex-col w-64 text-white
           shadow-md transition-transform duration-300 ease-in-out
@@ -210,9 +218,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
       </aside>
 
       {/* ── Main Workspace Canvas ── */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div data-component="DashboardShell/MainCanvas" className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* TopNavBar matching Stitch Specification */}
-        <header className="flex items-center justify-between gap-4 px-8 h-16 bg-white/80 backdrop-blur-md border-b border-[#E2E8F0] shadow-2xs flex-shrink-0">
+        <header data-component="DashboardShell/TopNavBar" className="flex items-center justify-between gap-4 px-8 h-16 bg-white/80 backdrop-blur-md border-b border-[#E2E8F0] shadow-2xs flex-shrink-0">
           <div className="flex items-center gap-6 flex-1 max-w-md">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -227,15 +235,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
               Shubh Enterprise
             </span>
 
-            {/* Search Input */}
-            <div className="relative w-64 ml-2">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#6E7977]" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="w-full h-10 pl-10 pr-4 bg-[#EFF4FF] border border-[#BDC9C6] rounded-lg text-sm text-[#0B1C30] placeholder-[#6E7977] focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/20 transition-all outline-none font-medium"
-              />
-            </div>
+
           </div>
 
           {/* Right actions */}
@@ -271,7 +271,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
         </header>
 
         {/* Main Workspace Body */}
-        <main className="flex-1 overflow-y-auto p-8 bg-[#F8F9FF]">
+        <main data-component="DashboardShell/PageContent" className="flex-1 overflow-y-auto p-8 bg-[#F8F9FF]">
           {children}
         </main>
       </div>
