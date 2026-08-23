@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import {
   normalizeCustomerName,
   generateDuplicateHash,
@@ -36,6 +37,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Prefer service role client for bulk ingestion to bypass RLS bottlenecks
+    let dbClient = supabase;
+    try {
+      dbClient = createAdminSupabaseClient();
+    } catch {
+      dbClient = supabase;
+    }
+
     // ── 3. Parse Request Payload ─────────────────────────────────────────────
     let body: {
       fileName: string;
@@ -67,7 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── 4. Create Import Batch Record using Authenticated Admin Client ────────
-    const { data: batchData, error: batchError } = await supabase
+    const { data: batchData, error: batchError } = await dbClient
       .from("import_batches")
       .insert({
         file_name: fileName,
@@ -91,7 +100,7 @@ export async function POST(request: NextRequest) {
     const batchId = batchData.id;
 
     // ── 5. Fetch Existing Customers for Matching ─────────────────────────────
-    const { data: existingCustomers, error: custError } = await supabase
+    const { data: existingCustomers, error: custError } = await dbClient
       .from("customers")
       .select("id, name, customer_code, gstin, phone, email");
 
@@ -176,22 +185,58 @@ export async function POST(request: NextRequest) {
       validRowsToProcess.push(row);
     }
 
-    // ── 7. Batch Create New Customers ────────────────────────────────────────
+    // ── 7. Batch Create New Customers with Row-Level Fallback ────────────────
     let newCustomersCount = 0;
     const newCustomerList = Array.from(newCustomersToInsertMap.values());
 
     if (newCustomerList.length > 0) {
-      // Insert in chunks of 50
       const chunkSize = 50;
       for (let i = 0; i < newCustomerList.length; i += chunkSize) {
         const chunk = newCustomerList.slice(i, i + chunkSize);
-        const { data: createdCusts, error: insertCustErr } = await supabase
+        const { data: createdCusts, error: insertCustErr } = await dbClient
           .from("customers")
           .insert(chunk)
           .select("id, name, customer_code, gstin");
 
         if (insertCustErr) {
-          console.error("[day-book/import] Error creating customers chunk:", insertCustErr);
+          console.warn("[day-book/import] Chunk customer insert failed, falling back to row-by-row:", insertCustErr.message);
+
+          // Retry inserting each customer individually
+          for (const cust of chunk) {
+            const { data: singleCust, error: singleErr } = await dbClient
+              .from("customers")
+              .insert(cust)
+              .select("id, name, customer_code, gstin")
+              .single();
+
+            if (singleErr) {
+              // Retry without gstin in case column is missing from older migration
+              const { gstin, ...custWithoutGstin } = cust;
+              const { data: retryCust, error: retryErr } = await dbClient
+                .from("customers")
+                .insert(custWithoutGstin)
+                .select("id, name, customer_code")
+                .single();
+
+              if (retryErr) {
+                console.error(`[day-book/import] Could not create customer "${cust.name}":`, retryErr.message);
+                importErrorsList.push({
+                  row_number: 0,
+                  error_reason: `Failed to create customer "${cust.name}": ${retryErr.message}`,
+                  raw_data: cust as unknown as Json,
+                });
+              } else if (retryCust) {
+                if (retryCust.name) customerMapByName.set(normalizeCustomerName(retryCust.name), retryCust.id);
+                if (retryCust.customer_code) customerMapByCode.set(retryCust.customer_code.trim().toLowerCase(), retryCust.id);
+                newCustomersCount++;
+              }
+            } else if (singleCust) {
+              if (singleCust.name) customerMapByName.set(normalizeCustomerName(singleCust.name), singleCust.id);
+              if (singleCust.customer_code) customerMapByCode.set(singleCust.customer_code.trim().toLowerCase(), singleCust.id);
+              if (singleCust.gstin) customerMapByGstin.set(singleCust.gstin.trim().toLowerCase(), singleCust.id);
+              newCustomersCount++;
+            }
+          }
         } else if (createdCusts) {
           createdCusts.forEach((c) => {
             if (c.name) customerMapByName.set(normalizeCustomerName(c.name), c.id);
@@ -215,7 +260,7 @@ export async function POST(request: NextRequest) {
       const hashChunkSize = 200;
       for (let i = 0; i < hashes.length; i += hashChunkSize) {
         const chunk = hashes.slice(i, i + hashChunkSize);
-        const { data: existingEntries } = await supabase
+        const { data: existingEntries } = await dbClient
           .from("day_book_entries")
           .select("duplicate_hash")
           .in("duplicate_hash", chunk);
@@ -294,7 +339,7 @@ export async function POST(request: NextRequest) {
 
     for (let i = 0; i < entriesToInsert.length; i += entryChunkSize) {
       const chunk = entriesToInsert.slice(i, i + entryChunkSize);
-      const { data: inserted, error: insertErr } = await supabase
+      const { data: inserted, error: insertErr } = await dbClient
         .from("day_book_entries")
         .insert(chunk)
         .select("id");
@@ -326,7 +371,7 @@ export async function POST(request: NextRequest) {
       const errorChunkSize = 100;
       for (let i = 0; i < formattedErrors.length; i += errorChunkSize) {
         const chunk = formattedErrors.slice(i, i + errorChunkSize);
-        await supabase.from("import_errors").insert(chunk);
+        await dbClient.from("import_errors").insert(chunk);
       }
     }
 
@@ -340,7 +385,7 @@ export async function POST(request: NextRequest) {
       finalStatus = "completed_with_errors";
     }
 
-    await supabase
+    await dbClient
       .from("import_batches")
       .update({
         successful_rows: successfulRowsCount,
@@ -354,7 +399,7 @@ export async function POST(request: NextRequest) {
 
     // ── 13. Log Activity ─────────────────────────────────────────────────────
     try {
-      await supabase.rpc("log_activity", {
+      await dbClient.rpc("log_activity", {
         p_action: "day_book_import",
         p_description: `Imported ${successfulRowsCount} Day Book entries from "${fileName}". (${newCustomersCount} new customers, ${duplicateRowsCount} duplicates skipped, ${failedRowsCount} errors)`,
         p_entity_type: "import_batches",

@@ -18,9 +18,14 @@ export function createProxySupabaseClient(request: NextRequest) {
   // the Supabase SDK refreshes the session token.
   let response = NextResponse.next({ request });
 
+  const supabaseKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    "";
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    supabaseKey,
     {
       cookies: {
         getAll() {

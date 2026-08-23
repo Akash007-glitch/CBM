@@ -128,14 +128,23 @@ export const useDashboardStore = create<DashboardState>((set, get) => {
   const debouncedRefresh = debounce(async () => {
     try {
       const { start, end } = getDateRange(30);
-      const [stats, customers, invoices, payments, activities] = await Promise.all([
+      const results = await Promise.allSettled([
         getDashboardStats(),
-        getCustomers({ is_active: true }),
+        getCustomers(),
         getInvoices({ limit: 100 }),
         getPayments({ limit: 100 }),
         getActivityFeed(20, 0),
+        getSalesTrend(start, end),
       ]);
-      set({ stats, customers, invoices, payments, activities });
+
+      set({
+        stats: results[0].status === "fulfilled" ? results[0].value : get().stats,
+        customers: results[1].status === "fulfilled" ? results[1].value : get().customers,
+        invoices: results[2].status === "fulfilled" ? results[2].value : get().invoices,
+        payments: results[3].status === "fulfilled" ? results[3].value : get().payments,
+        activities: results[4].status === "fulfilled" ? results[4].value : get().activities,
+        salesTrend: results[5].status === "fulfilled" ? results[5].value : get().salesTrend,
+      });
     } catch (err) {
       console.warn("Realtime refresh failed:", err);
     }
@@ -169,16 +178,37 @@ export const useDashboardStore = create<DashboardState>((set, get) => {
       try {
         const { start, end } = getDateRange(30);
 
-        const [stats, customers, salesmen, invoices, payments, activities, trend] =
-          await Promise.all([
-            getDashboardStats(),
-            getCustomers({ is_active: true }),
-            getSalesmen(),
-            getInvoices({ limit: 100 }),
-            getPayments({ limit: 100 }),
-            getActivityFeed(20, 0),
-            getSalesTrend(start, end),
-          ]);
+        const results = await Promise.allSettled([
+          getDashboardStats(),
+          getCustomers(),
+          getSalesmen(),
+          getInvoices({ limit: 100 }),
+          getPayments({ limit: 100 }),
+          getActivityFeed(20, 0),
+          getSalesTrend(start, end),
+        ]);
+
+        const stats = results[0].status === "fulfilled" ? results[0].value : {
+          today_sales: 0,
+          today_collections: 0,
+          total_outstanding: 0,
+          pending_invoices: 0,
+          total_customers: 0,
+          monthly_revenue: 0,
+        };
+        const customers = results[1].status === "fulfilled" ? results[1].value : [];
+        const salesmen = results[2].status === "fulfilled" ? results[2].value : [];
+        const invoices = results[3].status === "fulfilled" ? results[3].value : [];
+        const payments = results[4].status === "fulfilled" ? results[4].value : [];
+        const activities = results[5].status === "fulfilled" ? results[5].value : [];
+        const trend = results[6].status === "fulfilled" ? results[6].value : [];
+
+        // Log any failed calls for diagnostics
+        results.forEach((r, idx) => {
+          if (r.status === "rejected") {
+            console.warn(`[dashboardStore] Init query ${idx} failed:`, r.reason);
+          }
+        });
 
         // Only create the Realtime channel once — reuse existing one if already live
         let channel = get()._channel;
@@ -241,16 +271,26 @@ export const useDashboardStore = create<DashboardState>((set, get) => {
       set({ isLoading: true });
       try {
         const { start, end } = getDateRange(30);
-        const [stats, customers, invoices, payments, activities, trend] =
-          await Promise.all([
-            getDashboardStats(),
-            getCustomers({ is_active: true }),
-            getInvoices({ limit: 100 }),
-            getPayments({ limit: 100 }),
-            getActivityFeed(20, 0),
-            getSalesTrend(start, end),
-          ]);
-        set({ stats, customers, invoices, payments, activities, salesTrend: trend, isLoading: false });
+        const results = await Promise.allSettled([
+          getDashboardStats(),
+          getCustomers(),
+          getSalesmen(),
+          getInvoices({ limit: 100 }),
+          getPayments({ limit: 100 }),
+          getActivityFeed(20, 0),
+          getSalesTrend(start, end),
+        ]);
+
+        set({
+          stats: results[0].status === "fulfilled" ? results[0].value : get().stats,
+          customers: results[1].status === "fulfilled" ? results[1].value : get().customers,
+          salesmen: results[2].status === "fulfilled" ? results[2].value : get().salesmen,
+          invoices: results[3].status === "fulfilled" ? results[3].value : get().invoices,
+          payments: results[4].status === "fulfilled" ? results[4].value : get().payments,
+          activities: results[5].status === "fulfilled" ? results[5].value : get().activities,
+          salesTrend: results[6].status === "fulfilled" ? results[6].value : get().salesTrend,
+          isLoading: false,
+        });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         set({ isLoading: false, error: msg });

@@ -489,7 +489,44 @@ export async function parseExcelFile(file: File): Promise<ParseExcelResult> {
   }
 
   const sheet = workbook.Sheets[firstSheetName];
+
+  // Read 2D array representation to scan for the true header row
+  const raw2D: (string | number | boolean | null | undefined)[][] = XLSX.utils.sheet_to_json(sheet, {
+    header: 1,
+    defval: "",
+    raw: true,
+  });
+
+  if (!raw2D || raw2D.length === 0) {
+    throw new Error("No data found in sheet '" + firstSheetName + "'.");
+  }
+
+  // Scan first 15 rows to find the best header row (e.g. skipping report titles in Tally/Busy)
+  let bestHeaderRowIndex = 0;
+  let maxScore = 0;
+
+  const maxScanRows = Math.min(raw2D.length, 15);
+  for (let r = 0; r < maxScanRows; r++) {
+    const rowValues = (raw2D[r] || []).map((v) => String(v || "").trim()).filter(Boolean);
+    if (rowValues.length === 0) continue;
+
+    let score = 0;
+    for (const val of rowValues) {
+      const match = detectColumnMapping(val);
+      if (match.erpField !== "ignore" && match.confidence >= 0.7) {
+        score++;
+      }
+    }
+
+    if (score > maxScore) {
+      maxScore = score;
+      bestHeaderRowIndex = r;
+    }
+  }
+
+  // Parse using detected header row index
   const rawRows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(sheet, {
+    range: bestHeaderRowIndex,
     defval: "",
     raw: true, // return actual numbers so parseExcelAmount gets JS numbers, not formatted strings
   });
@@ -498,8 +535,10 @@ export async function parseExcelFile(file: File): Promise<ParseExcelResult> {
     throw new Error("No data found in sheet '" + firstSheetName + "'.");
   }
 
-  // Extract raw headers
-  const headers = Object.keys(rawRows[0] || {});
+  // Extract raw headers (filtering out unnamed empty columns)
+  const headers = Object.keys(rawRows[0] || {}).filter(
+    (h) => h && !h.startsWith("__EMPTY")
+  );
 
   // Build initial mappings
   const usedErpFields = new Set<string>();
@@ -521,6 +560,21 @@ export async function parseExcelFile(file: File): Promise<ParseExcelResult> {
       sampleData: sample,
     };
   });
+
+  // If customer_name was not assigned but particulars or party column is present, assign it
+  const hasCustomerCol = mappings.some((m) => m.erpField === "customer_name");
+  if (!hasCustomerCol) {
+    const partMapping = mappings.find((m) => m.erpField === "particulars");
+    if (partMapping) {
+      partMapping.erpField = "customer_name";
+    } else {
+      // Find first string column
+      const firstStrCol = mappings.find((m) => m.erpField === "ignore");
+      if (firstStrCol) {
+        firstStrCol.erpField = "customer_name";
+      }
+    }
+  }
 
   // Convert raw rows using detected mappings
   return transformRowsWithMappings(sheetNameOrDefault(firstSheetName), headers, rawRows, mappings);
@@ -603,7 +657,7 @@ export function transformRowsWithMappings(
     const rawPincode = mappingMap.has("pincode") ? raw[mappingMap.get("pincode")!] : "";
     const rawGstin = mappingMap.has("gstin") ? raw[mappingMap.get("gstin")!] : "";
 
-    const customerName = String(rawCustomer || "").trim();
+    const customerName = String(rawCustomer || rawParticulars || "").trim();
     const transactionDate = parseExcelDate(rawDate);
     const voucherRef = rawVoucher ? String(rawVoucher).trim() : null;
     const particulars = rawParticulars ? String(rawParticulars).trim() : null;
