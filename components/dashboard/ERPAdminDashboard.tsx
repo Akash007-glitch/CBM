@@ -45,7 +45,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
     }).format(val);
 
   return (
-    <div data-component="ERPAdminDashboard" className="max-w-[1440px] mx-auto space-y-8">
+    <div data-component="" className="max-w-[1440px] mx-auto space-y-8">
       {/* Header Section matching Stitch Specification */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
@@ -168,16 +168,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
             </div>
           </div>
           {/* Mini Chart visualization matching Stitch specification */}
-          <div className="w-48 h-12 rounded-lg bg-repeating-linear-45 from-[#F8F9FF] to-[#FFFFFF] border border-[#E2E8F0] flex items-center justify-center text-xs font-semibold text-[#6E7977] shadow-inner p-1">
-            <svg className="w-full h-full text-[#0F766E]" viewBox="0 0 100 30" fill="none">
-              <path
-                d="M 0,22 Q 25,8 50,16 T 100,6"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                fill="none"
-              />
-            </svg>
-          </div>
+
         </div>
       </div>
 
@@ -252,44 +243,23 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
           </div>
 
           {/* Collection vs Outstanding */}
-          <div className="bg-white border border-[#E2E8F0] rounded-[14px] p-6 shadow-xs">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-[#0B1C30]">Collection vs Outstanding</h2>
-              <button
-                onClick={onOpenQuickAdd}
-                className="text-[#0F766E] text-sm font-semibold hover:underline cursor-pointer"
-              >
-                View Details
-              </button>
-            </div>
 
-            {/* Overdue Alert pill matching Stitch spec */}
-            <div className="px-4 py-3 rounded-lg bg-[#FFDAD6]/30 border border-[#BA1A1A]/20 flex items-center justify-between text-sm font-medium text-[#BA1A1A]">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-[#BA1A1A] flex-shrink-0" />
-                <span>Global Industries invoice &gt; 60 days overdue (₹12,000)</span>
-              </div>
-              <span className="text-xs uppercase font-bold px-2 py-0.5 bg-[#BA1A1A] text-white rounded">
-                Overdue
-              </span>
-            </div>
-          </div>
         </div>
 
         {/* Right Column (1 Col Wide): Activity Feed */}
         <div className="bg-white border border-[#E2E8F0] rounded-[14px] p-6 shadow-xs flex flex-col h-full">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-[#0B1C30]">Activity Feed</h2>
-            <button className="text-[#3E4947] hover:text-[#0B1C30] p-1 rounded cursor-pointer">
+            {/* <button className="text-[#3E4947] hover:text-[#0B1C30] p-1 rounded cursor-pointer">
               <MoreHorizontal className="w-5 h-5" />
-            </button>
+            </button> */}
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-6 pr-2">
             {activities.slice(0, 5).map((act) => {
               // Map action string to icon type
               const isPayment = act.action?.includes('payment');
-              const isAlert   = act.action?.includes('overdue') || act.action?.includes('alert');
+              const isAlert = act.action?.includes('overdue') || act.action?.includes('alert');
 
               let icon = <DollarSign className="w-4 h-4 text-[#0051D5]" />;
               let iconBg = "bg-[#E5EEFF]";
@@ -314,7 +284,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
                     {icon}
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-[#0B1C30]">{act.action?.replace(/_/g,' ')}</div>
+                    <div className="text-sm font-semibold text-[#0B1C30]">{act.action?.replace(/_/g, ' ')}</div>
                     <div className="text-sm text-[#3E4947] font-normal">{act.description}</div>
                     <div className="text-xs text-[#6E7977] mt-1 font-medium">{timeAgo}</div>
                   </div>
@@ -324,7 +294,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
           </div>
 
           <button
-            onClick={onOpenQuickAdd}
+            // onClick={}
             className="w-full mt-6 py-2.5 border border-[#E2E8F0] rounded-lg text-[#0F766E] font-semibold text-sm hover:bg-[#F8F9FF] transition-colors cursor-pointer"
           >
             View All Activity

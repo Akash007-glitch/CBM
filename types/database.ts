@@ -70,6 +70,7 @@ export type Database = {
           credit_limit: number
           customer_code: string | null
           email: string | null
+          gstin: string | null
           id: string
           is_active: boolean
           name: string
@@ -87,6 +88,7 @@ export type Database = {
           credit_limit?: number
           customer_code?: string | null
           email?: string | null
+          gstin?: string | null
           id?: string
           is_active?: boolean
           name: string
@@ -104,6 +106,7 @@ export type Database = {
           credit_limit?: number
           customer_code?: string | null
           email?: string | null
+          gstin?: string | null
           id?: string
           is_active?: boolean
           name?: string
@@ -119,6 +122,176 @@ export type Database = {
             columns: ["assigned_salesman_id"]
             isOneToOne: false
             referencedRelation: "salesmen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      day_book_entries: {
+        Row: {
+          amount: number
+          balance: number | null
+          created_at: string
+          created_by: string
+          credit: number
+          customer_id: string
+          debit: number
+          duplicate_hash: string | null
+          id: string
+          import_batch_id: string | null
+          particulars: string | null
+          raw_row_data: Json | null
+          source: string
+          transaction_date: string
+          transaction_type: "debit" | "credit"
+          voucher_ref: string | null
+        }
+        Insert: {
+          amount?: number
+          balance?: number | null
+          created_at?: string
+          created_by: string
+          credit?: number
+          customer_id: string
+          debit?: number
+          duplicate_hash?: string | null
+          id?: string
+          import_batch_id?: string | null
+          particulars?: string | null
+          raw_row_data?: Json | null
+          source?: string
+          transaction_date?: string
+          transaction_type?: "debit" | "credit"
+          voucher_ref?: string | null
+        }
+        Update: {
+          amount?: number
+          balance?: number | null
+          created_at?: string
+          created_by?: string
+          credit?: number
+          customer_id?: string
+          debit?: number
+          duplicate_hash?: string | null
+          id?: string
+          import_batch_id?: string | null
+          particulars?: string | null
+          raw_row_data?: Json | null
+          source?: string
+          transaction_date?: string
+          transaction_type?: "debit" | "credit"
+          voucher_ref?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "day_book_entries_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "day_book_entries_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "day_book_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_batches: {
+        Row: {
+          created_at: string
+          duplicate_rows: number
+          failed_rows: number
+          file_name: string
+          file_size: number | null
+          id: string
+          new_customers_count: number
+          status: "processing" | "completed" | "completed_with_errors" | "failed"
+          successful_rows: number
+          target_account: string | null
+          total_rows: number
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          duplicate_rows?: number
+          failed_rows?: number
+          file_name: string
+          file_size?: number | null
+          id?: string
+          new_customers_count?: number
+          status?: "processing" | "completed" | "completed_with_errors" | "failed"
+          successful_rows?: number
+          target_account?: string | null
+          total_rows?: number
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          duplicate_rows?: number
+          failed_rows?: number
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          new_customers_count?: number
+          status?: "processing" | "completed" | "completed_with_errors" | "failed"
+          successful_rows?: number
+          target_account?: string | null
+          total_rows?: number
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_batches_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_errors: {
+        Row: {
+          created_at: string
+          error_reason: string
+          id: string
+          import_batch_id: string
+          raw_data: Json | null
+          row_number: number
+        }
+        Insert: {
+          created_at?: string
+          error_reason: string
+          id?: string
+          import_batch_id: string
+          raw_data?: Json | null
+          row_number: number
+        }
+        Update: {
+          created_at?: string
+          error_reason?: string
+          id?: string
+          import_batch_id?: string
+          raw_data?: Json | null
+          row_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_errors_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
             referencedColumns: ["id"]
           },
         ]

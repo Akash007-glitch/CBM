@@ -25,15 +25,22 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  v_role text := COALESCE(NEW.raw_user_meta_data->>'role', 'salesman');
+  v_name text := COALESCE(NULLIF(NEW.raw_user_meta_data->>'full_name', ''), split_part(NEW.email, '@', 1));
 BEGIN
   INSERT INTO public.profiles (id, full_name, email, role)
-  VALUES (
-    NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
-    NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'role', 'salesman')
-  )
-  ON CONFLICT (id) DO NOTHING;
+  VALUES (NEW.id, v_name, NEW.email, v_role)
+  ON CONFLICT (id) DO UPDATE 
+    SET full_name = EXCLUDED.full_name,
+        email = EXCLUDED.email;
+
+  IF v_role = 'salesman' THEN
+    INSERT INTO public.salesmen (user_id, name, email, is_active)
+    VALUES (NEW.id, v_name, NEW.email, true)
+    ON CONFLICT (user_id) DO NOTHING;
+  END IF;
+
   RETURN NEW;
 END;
 $$;

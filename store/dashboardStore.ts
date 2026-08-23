@@ -122,14 +122,20 @@ function debounce<T extends (...args: unknown[]) => void>(fn: T, ms: number) {
 // ── Store ─────────────────────────────────────────────────────────────────────
 
 export const useDashboardStore = create<DashboardState>((set, get) => {
-  // Debounced refresh triggered by Realtime events
+  // Debounced refresh triggered by Realtime events.
+  // Re-fetches ALL entities so that customer adds, payment records,
+  // and day-book imports are immediately reflected in the UI.
   const debouncedRefresh = debounce(async () => {
     try {
-      const [stats, activities] = await Promise.all([
+      const { start, end } = getDateRange(30);
+      const [stats, customers, invoices, payments, activities] = await Promise.all([
         getDashboardStats(),
+        getCustomers({ is_active: true }),
+        getInvoices({ limit: 100 }),
+        getPayments({ limit: 100 }),
         getActivityFeed(20, 0),
       ]);
-      set({ stats, activities });
+      set({ stats, customers, invoices, payments, activities });
     } catch (err) {
       console.warn("Realtime refresh failed:", err);
     }
@@ -158,7 +164,6 @@ export const useDashboardStore = create<DashboardState>((set, get) => {
 
     // ── Initialize ─────────────────────────────────────────────────────────────
     initialize: async () => {
-      if (get().isInitialized) return;
       set({ isLoading: true, error: null });
 
       try {
@@ -175,30 +180,43 @@ export const useDashboardStore = create<DashboardState>((set, get) => {
             getSalesTrend(start, end),
           ]);
 
-        // Set up Realtime subscriptions
-        const channel = supabase
-          .channel("erp-dashboard")
-          .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "invoices" },
-            () => debouncedRefresh()
-          )
-          .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "payments" },
-            () => debouncedRefresh()
-          )
-          .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "customers" },
-            () => debouncedRefresh()
-          )
-          .on(
-            "postgres_changes",
-            { event: "INSERT", schema: "public", table: "activity_logs" },
-            () => debouncedRefresh()
-          )
-          .subscribe();
+        // Only create the Realtime channel once — reuse existing one if already live
+        let channel = get()._channel;
+        if (!channel) {
+          channel = supabase
+            .channel("erp-dashboard")
+            .on(
+              "postgres_changes",
+              { event: "*", schema: "public", table: "invoices" },
+              () => debouncedRefresh()
+            )
+            .on(
+              "postgres_changes",
+              { event: "*", schema: "public", table: "payments" },
+              () => debouncedRefresh()
+            )
+            .on(
+              "postgres_changes",
+              { event: "*", schema: "public", table: "customers" },
+              () => debouncedRefresh()
+            )
+            .on(
+              "postgres_changes",
+              { event: "*", schema: "public", table: "day_book_entries" },
+              () => debouncedRefresh()
+            )
+            .on(
+              "postgres_changes",
+              { event: "*", schema: "public", table: "import_batches" },
+              () => debouncedRefresh()
+            )
+            .on(
+              "postgres_changes",
+              { event: "INSERT", schema: "public", table: "activity_logs" },
+              () => debouncedRefresh()
+            )
+            .subscribe();
+        }
 
         set({
           stats,

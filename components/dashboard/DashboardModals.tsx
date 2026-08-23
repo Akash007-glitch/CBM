@@ -1,9 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Plus, CheckCircle2 } from "lucide-react";
+import {
+  X,
+  Plus,
+  CheckCircle2,
+} from "lucide-react";
 import { useDashboardStore } from "@/store/dashboardStore";
-import type { CustomerRow } from "@/lib/services/customerService";
+import type { PaymentRow } from "@/lib/services/paymentService";
+import type { InvoiceRow } from "@/lib/services/invoiceService";
 
 interface ModalProps {
   isOpen: boolean;
@@ -196,114 +201,10 @@ export const AddCustomerModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
   );
 };
 
-// ── Quick Add Modal ────────────────────────────────────────────────────────────
+import { ImportDayBookModal } from "@/components/dashboard/ImportDayBookModal";
 
-export const QuickAddModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
-  const customers = useDashboardStore((s) => s.customers);
-  const salesmen  = useDashboardStore((s) => s.salesmen);
-
-  const [activeTab, setActiveTab] = useState<"customer" | "invoice" | "payment">("customer");
-  const [selectedCustomerId, setSelectedCustomerId] = useState(customers[0]?.id ?? "");
-  const [selectedSalesmanId, setSelectedSalesmanId] = useState(salesmen[0]?.id ?? "");
-  const [amount, setAmount] = useState("15000");
-  const [toastMsg, setToastMsg] = useState("");
-
-  if (!isOpen) return null;
-
-  if (activeTab === "customer") {
-    return <AddCustomerModal isOpen={isOpen} onClose={onClose} />;
-  }
-
-  const handleActionSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const numAmount = parseFloat(amount);
-    if (!numAmount || numAmount <= 0) return;
-
-    if (activeTab === "invoice") {
-      setToastMsg(`Invoice for ₹${numAmount.toLocaleString("en-IN")} queued — full invoice form required for DB.`);
-    } else if (activeTab === "payment") {
-      setToastMsg(`Payment of ₹${numAmount.toLocaleString("en-IN")} queued — full payment form required for DB.`);
-    }
-
-    setTimeout(() => { setToastMsg(""); onClose(); }, 1400);
-  };
-
-  return (
-    <div data-component="QuickAddModal" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1C30]/40 backdrop-blur-xs">
-      <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl border border-[#E2E8F0] animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0]">
-          <h3 className="text-lg font-bold text-[#0B1C30]">Quick Office Action</h3>
-          <button type="button" onClick={onClose} className="text-[#3E4947] hover:text-[#0B1C30] cursor-pointer">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="grid grid-cols-3 p-1 bg-[#EFF4FF] rounded-lg mt-4 text-xs font-bold">
-          <button type="button" onClick={() => setActiveTab("customer")}
-            className="py-1.5 rounded-md text-[#0F766E] hover:bg-white transition-all cursor-pointer">
-            + Customer
-          </button>
-          <button type="button" onClick={() => setActiveTab("invoice")}
-            className={`py-1.5 rounded-md transition-all cursor-pointer ${activeTab === "invoice" ? "bg-white text-[#0B1C30] shadow-2xs" : "text-[#3E4947]"}`}>
-            + Invoice
-          </button>
-          <button type="button" onClick={() => setActiveTab("payment")}
-            className={`py-1.5 rounded-md transition-all cursor-pointer ${activeTab === "payment" ? "bg-white text-[#0B1C30] shadow-2xs" : "text-[#3E4947]"}`}>
-            + Payment
-          </button>
-        </div>
-
-        {toastMsg && (
-          <div className="mt-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" /><span>{toastMsg}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleActionSubmit} className="mt-4 space-y-4 text-xs">
-          <div>
-            <label className="block font-semibold text-[#3E4947] mb-1">Select Customer</label>
-            <select value={selectedCustomerId} onChange={(e) => setSelectedCustomerId(e.target.value)}
-              className="w-full h-10 px-3 border border-[#BDC9C6] rounded-lg bg-[#EFF4FF]/50 focus:border-[#0F766E] text-[#0B1C30] font-medium">
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>{c.name} {c.city ? `(${c.city})` : ""}</option>
-              ))}
-            </select>
-          </div>
-
-          {activeTab === "invoice" && (
-            <div>
-              <label className="block font-semibold text-[#3E4947] mb-1">Assigned Salesman</label>
-              <select value={selectedSalesmanId} onChange={(e) => setSelectedSalesmanId(e.target.value)}
-                className="w-full h-10 px-3 border border-[#BDC9C6] rounded-lg bg-[#EFF4FF]/50 focus:border-[#0F766E] text-[#0B1C30] font-medium">
-                {salesmen.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div>
-            <label className="block font-semibold text-[#3E4947] mb-1">Amount (₹)</label>
-            <input type="number" required min="1" value={amount} onChange={(e) => setAmount(e.target.value)}
-              className="w-full h-10 px-3 border border-[#BDC9C6] rounded-lg bg-[#EFF4FF]/50 focus:border-[#0F766E] text-[#0B1C30] font-mono font-bold" />
-          </div>
-
-          <div className="pt-3 flex items-center gap-3">
-            <button type="button" onClick={onClose}
-              className="flex-1 h-10 border border-[#BDC9C6] rounded-lg font-semibold text-[#0B1C30] hover:bg-[#EFF4FF]">
-              Cancel
-            </button>
-            <button type="submit"
-              className="flex-1 h-10 bg-[#0F766E] text-white rounded-lg font-semibold hover:bg-[#0F766E]/90 shadow-2xs">
-              {activeTab === "invoice" ? "Generate Invoice" : "Log Payment"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
+export { ImportDayBookModal };
+export const QuickAddModal: React.FC<ModalProps> = (props) => <ImportDayBookModal {...props} />;
 
 // ── Sub-Pages Views ───────────────────────────────────────────────────────────
 
@@ -429,7 +330,7 @@ export const CollectionsView: React.FC<{ onOpenQuickAdd: () => void }> = ({ onOp
             {payments.map((p) => (
               <tr key={p.id} className="hover:bg-[#F8F9FF]">
                 <td className="p-4 font-mono font-semibold text-[#3E4947]">{p.payment_number ?? p.id.slice(0, 8)}</td>
-                <td className="p-4 font-bold text-[#0B1C30]">{p.customer_id}</td>
+                <td className="p-4 font-bold text-[#0B1C30]">{(p as PaymentRow & { customers?: { name: string } | null }).customers?.name ?? p.customer_id}</td>
                 <td className="p-4 font-bold text-[#0F766E]">₹{Number(p.amount).toLocaleString("en-IN")}</td>
                 <td className="p-4 text-[#3E4947] capitalize">{p.payment_method.replace("_", " ")}</td>
                 <td className="p-4 text-[#3E4947]">{new Date(p.payment_date).toLocaleDateString("en-IN")}</td>
@@ -468,7 +369,7 @@ export const OutstandingView: React.FC = () => {
             {invoices.map((inv) => (
               <tr key={inv.id} className="hover:bg-[#F8F9FF]">
                 <td className="p-4 font-mono font-semibold text-[#3E4947]">{inv.invoice_number}</td>
-                <td className="p-4 font-bold text-[#0B1C30]">{inv.customer_id}</td>
+                <td className="p-4 font-bold text-[#0B1C30]">{(inv as InvoiceRow & { customers?: { name: string } | null }).customers?.name ?? inv.customer_id}</td>
                 <td className="p-4 font-bold text-[#BA1A1A]">₹{Number(inv.total_amount).toLocaleString("en-IN")}</td>
                 <td className="p-4 text-[#6E7977]">{inv.due_date ? new Date(inv.due_date).toLocaleDateString("en-IN") : "—"}</td>
                 <td className="p-4">
