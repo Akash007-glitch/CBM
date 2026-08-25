@@ -14,9 +14,8 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Show browser's native "Leave site?" dialog on tab close / hard refresh /
-  // external navigation. Does NOT affect Next.js client-side route changes.
-  useBeforeUnload();
+  // Disable unconditional beforeunload dialog on normal browsing
+  useBeforeUnload(false);
 
   return <>{children}</>;
 }

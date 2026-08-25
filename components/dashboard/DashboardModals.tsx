@@ -5,6 +5,7 @@ import {
   X,
   Plus,
   CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { useDashboardStore } from "@/store/dashboardStore";
 import type { PaymentRow } from "@/lib/services/paymentService";
@@ -33,40 +34,46 @@ export const AddCustomerModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
   const [creditLimit,      setCreditLimit]      = useState("");
   const [openingBalance,   setOpeningBalance]   = useState("");
   const [successToast,     setSuccessToast]     = useState("");
+  const [errorToast,       setErrorToast]       = useState("");
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorToast("");
 
     const nameToUse    = companyName.trim() || "New Customer";
     const openBal      = parseFloat(openingBalance) || 0;
     const creditLim    = parseFloat(creditLimit) || 0;
     const salesmanId   = assignedSalesman || undefined;
 
-    await addCustomer({
-      name:                 nameToUse,
-      email:                email.trim() || null,
-      phone:                phone.trim() || null,
-      address:              streetAddress.trim() || null,
-      city:                 city.trim() || null,
-      state:                state.trim() || null,
-      pincode:              zip.trim() || null,
-      assigned_salesman_id: salesmanId ?? null,
-      credit_limit:         creditLim,
-      opening_balance:      openBal,
-      is_active:            true,
-    });
+    try {
+      await addCustomer({
+        name:                 nameToUse,
+        email:                email.trim() || null,
+        phone:                phone.trim() || null,
+        address:              streetAddress.trim() || null,
+        city:                 city.trim() || null,
+        state:                state.trim() || null,
+        pincode:              zip.trim() || null,
+        assigned_salesman_id: salesmanId ?? null,
+        credit_limit:         creditLim,
+        opening_balance:      openBal,
+        is_active:            true,
+      });
 
-    setSuccessToast(`Customer "${nameToUse}" created successfully!`);
+      setSuccessToast(`Customer "${nameToUse}" created successfully!`);
 
-    setTimeout(() => {
-      setCompanyName(""); setContactPerson(""); setPhone(""); setEmail("");
-      setStreetAddress(""); setCity(""); setState(""); setZip("");
-      setAssignedSalesman(""); setCreditLimit(""); setOpeningBalance("");
-      setSuccessToast("");
-      onClose();
-    }, 1200);
+      setTimeout(() => {
+        setCompanyName(""); setContactPerson(""); setPhone(""); setEmail("");
+        setStreetAddress(""); setCity(""); setState(""); setZip("");
+        setAssignedSalesman(""); setCreditLimit(""); setOpeningBalance("");
+        setSuccessToast("");
+        onClose();
+      }, 1200);
+    } catch (err) {
+      setErrorToast(err instanceof Error ? err.message : "Failed to create customer.");
+    }
   };
 
   return (
@@ -82,11 +89,17 @@ export const AddCustomerModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Success Toast */}
+        {/* Success / Error Toasts */}
         {successToast && (
           <div className="mx-6 mt-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>{successToast}</span>
+          </div>
+        )}
+        {errorToast && (
+          <div className="mx-6 mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-xs font-bold flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-600" />
+            <span>{errorToast}</span>
           </div>
         )}
 
@@ -346,6 +359,7 @@ export const CollectionsView: React.FC<{ onOpenQuickAdd: () => void }> = ({ onOp
 export const OutstandingView: React.FC = () => {
   const invoices = useDashboardStore((s) => s.invoices)
     .filter((i) => i.status === "issued" || i.status === "partially_paid" || i.status === "overdue");
+  const customers = useDashboardStore((s) => s.customers);
 
   return (
     <div data-component="OutstandingView" className="space-y-6 max-w-[1440px] mx-auto">
@@ -360,25 +374,32 @@ export const OutstandingView: React.FC = () => {
             <tr>
               <th className="p-4">Invoice #</th>
               <th className="p-4">Customer</th>
-              <th className="p-4">Amount</th>
+              <th className="p-4">Outstanding</th>
               <th className="p-4">Due Date</th>
               <th className="p-4">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E2E8F0]">
-            {invoices.map((inv) => (
-              <tr key={inv.id} className="hover:bg-[#F8F9FF]">
-                <td className="p-4 font-mono font-semibold text-[#3E4947]">{inv.invoice_number}</td>
-                <td className="p-4 font-bold text-[#0B1C30]">{(inv as InvoiceRow & { customers?: { name: string } | null }).customers?.name ?? inv.customer_id}</td>
-                <td className="p-4 font-bold text-[#BA1A1A]">₹{Number(inv.total_amount).toLocaleString("en-IN")}</td>
-                <td className="p-4 text-[#6E7977]">{inv.due_date ? new Date(inv.due_date).toLocaleDateString("en-IN") : "—"}</td>
-                <td className="p-4">
-                  <span className="px-2.5 py-1 rounded text-xs font-bold bg-[#FFDAD6] text-[#BA1A1A] capitalize">
-                    {inv.status.replace("_", " ")}
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {invoices.map((inv) => {
+              const custName = customers.find((c) => c.id === inv.customer_id)?.name ??
+                (inv as InvoiceRow & { customers?: { name: string } | null }).customers?.name ??
+                inv.customer_id.slice(0, 8);
+              const remaining = Number(inv.total_amount) - Number((inv as InvoiceRow & { paid_amount?: number }).paid_amount || 0);
+
+              return (
+                <tr key={inv.id} className="hover:bg-[#F8F9FF]">
+                  <td className="p-4 font-mono font-semibold text-[#3E4947]">{inv.invoice_number}</td>
+                  <td className="p-4 font-bold text-[#0B1C30]">{custName}</td>
+                  <td className="p-4 font-bold text-[#BA1A1A]">₹{remaining.toLocaleString("en-IN")}</td>
+                  <td className="p-4 text-[#6E7977]">{inv.due_date ? new Date(inv.due_date).toLocaleDateString("en-IN") : "—"}</td>
+                  <td className="p-4">
+                    <span className="px-2.5 py-1 rounded text-xs font-bold bg-[#FFDAD6] text-[#BA1A1A] capitalize">
+                      {inv.status.replace("_", " ")}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

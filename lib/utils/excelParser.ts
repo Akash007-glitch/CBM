@@ -607,8 +607,9 @@ export function transformRowsWithMappings(
   let errorCount = 0;
   let balanceMismatchCount = 0;
 
-  // Running balance carry-forward across chronological rows
-  let runningBalance = 0;
+  // Running balances: global account running balance AND per-party running balance
+  let accountRunningBalance = 0;
+  const partyRunningBalances = new Map<string, number>();
 
   for (let i = 0; i < rawRows.length; i++) {
     const raw = rawRows[i];
@@ -699,8 +700,16 @@ export function transformRowsWithMappings(
     const transactionType: "debit" | "credit" = debitAmount > 0 ? "debit" : "credit";
     const totalTxnAmount = Math.max(debitAmount, creditAmount);
 
-    // CURRENT BALANCE = PREVIOUS BALANCE + DEBIT - CREDIT
-    const calculatedBalance = runningBalance + debitAmount - creditAmount;
+    // Compute both global account running balance and per-party running balance
+    const normPartyKey = normalizeCustomerName(customerName);
+    const prevPartyBal = partyRunningBalances.get(normPartyKey) ?? 0;
+    const calculatedPartyBalance = prevPartyBal + debitAmount - creditAmount;
+    partyRunningBalances.set(normPartyKey, calculatedPartyBalance);
+
+    const calculatedAccountBalance = accountRunningBalance + debitAmount - creditAmount;
+    accountRunningBalance = calculatedAccountBalance;
+
+    const calculatedBalance = calculatedPartyBalance;
 
     // Excel Balance Validation (if present)
     let excelBalance: number | null = null;
@@ -711,17 +720,17 @@ export function transformRowsWithMappings(
       const parsedBal = parseExcelAmount(rawBalance);
       excelBalance = parsedBal.amountSigned;
 
-      if (Math.abs(calculatedBalance - excelBalance) > 0.01) {
+      const matchesAccount = Math.abs(calculatedAccountBalance - excelBalance) <= 0.01;
+      const matchesParty = Math.abs(calculatedPartyBalance - excelBalance) <= 0.01;
+
+      if (!matchesAccount && !matchesParty) {
         isBalanceMatched = false;
         balanceMismatchCount++;
-        balanceErrorReason = `Balance mismatch: calculated ₹${calculatedBalance.toLocaleString(
+        balanceErrorReason = `Balance notice: calculated ₹${calculatedBalance.toLocaleString(
           "en-IN"
         )} vs Excel ₹${excelBalance.toLocaleString("en-IN")}`;
       }
     }
-
-    // Carry forward running balance
-    runningBalance = calculatedBalance;
 
     // Row validation
     let isValid = true;
@@ -733,8 +742,7 @@ export function transformRowsWithMappings(
     } else if (debitAmount === 0 && creditAmount === 0 && totalTxnAmount === 0) {
       isValid = false;
       errorReason = "Transaction must have a non-zero Debit or Credit amount";
-    } else if (!isBalanceMatched && balanceErrorReason) {
-      // Flag balance mismatch as error/warning
+    } else if (balanceErrorReason) {
       errorReason = balanceErrorReason;
     }
 

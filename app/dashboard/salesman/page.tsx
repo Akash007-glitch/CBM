@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { useLogout, useUser } from "@/store/authStore";
 import { useDashboardStore, Customer } from "@/store/dashboardStore";
+import { getCustomerOutstanding } from "@/lib/services/customerService";
 import {
   Menu,
   Search,
@@ -22,22 +22,16 @@ import {
   Wallet,
   Landmark,
   MoreHorizontal,
-  AlertCircle,
   TrendingUp,
-  Clock,
   ChevronRight,
-  Sparkles,
   LogOut,
   ShieldCheck,
   Check,
   Copy,
-  Share2,
-  Printer,
   FileCheck,
 } from "lucide-react";
 
 export default function SalesmanDashboardPage() {
-  const router = useRouter();
   const logout = useLogout();
 
   const handleLogout = async () => {
@@ -47,7 +41,6 @@ export default function SalesmanDashboardPage() {
 
   // Navigation & view states
   const [activeTab, setActiveTab] = useState<"home" | "customers" | "collections" | "record-collection">("customers");
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   // Store data & actions
   const initialize = useDashboardStore((s) => s.initialize);
@@ -82,12 +75,13 @@ export default function SalesmanDashboardPage() {
 
   // Record Collection Form state
   const [collCustomer, setCollCustomer] = useState<Customer | null>(null);
-  const [collInvoiceTotal, setCollInvoiceTotal] = useState<number>(4500);
-  const [collPrevPaid, setCollPrevPaid] = useState<number>(1000);
+  const [collInvoiceTotal, setCollInvoiceTotal] = useState<number>(0);
+  const [collPrevPaid, setCollPrevPaid] = useState<number>(0);
+  const [unpaidInvoices, setUnpaidInvoices] = useState<{ invoice_id: string; outstanding_amount: number; invoice_total: number }[]>([]);
   const [applyDiscount, setApplyDiscount] = useState<boolean>(false);
   const [damageDeduction, setDamageDeduction] = useState<string>("0");
   const [specialDiscount, setSpecialDiscount] = useState<string>("0");
-  const [amountCollected, setAmountCollected] = useState<string>("3500.00");
+  const [amountCollected, setAmountCollected] = useState<string>("0.00");
   const [paymentMethod, setPaymentMethod] = useState<"Cash" | "Cheque" | "Transfer" | "Other">("Cash");
   const [referenceNumber, setReferenceNumber] = useState<string>("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -109,17 +103,40 @@ export default function SalesmanDashboardPage() {
   } | null>(null);
 
   // Handle direct navigation to Record Collection from Customer Card Collection Icon
-  const handleOpenCollection = (customer: Customer) => {
-    setSelectedCustomer(customer);
+  const handleOpenCollection = async (customer: Customer) => {
     setCollCustomer(customer);
 
-    const invTotal = Number(customer.opening_balance) > 0 ? Number(customer.opening_balance) + 1000 : 4500;
-    const prevPaid = 0;
-    const currentBal = Math.max(0, invTotal - prevPaid);
+    let invs: { invoice_id: string; outstanding_amount: number; invoice_total: number }[] = [];
+    try {
+      const data = await getCustomerOutstanding(customer.id);
+      invs = (data || []).map((row) => ({
+        invoice_id: row.invoice_id ?? "",
+        outstanding_amount: Number(row.outstanding_amount ?? 0),
+        invoice_total: Number(row.invoice_total ?? 0),
+      })).filter((i) => i.outstanding_amount > 0);
+    } catch {
+      invs = [];
+    }
 
-    setCollInvoiceTotal(invTotal);
-    setCollPrevPaid(prevPaid);
-    setAmountCollected(currentBal.toFixed(2));
+    setUnpaidInvoices(invs);
+
+    const totalOutstandingFromInvoices = invs.reduce(
+      (sum, i) => sum + i.outstanding_amount,
+      0
+    );
+    const totalInvoiceSum = invs.reduce(
+      (sum, i) => sum + i.invoice_total,
+      0
+    );
+    const totalPaidSum = Math.max(0, totalInvoiceSum - totalOutstandingFromInvoices);
+
+    const effectiveOutstanding = totalOutstandingFromInvoices > 0
+      ? totalOutstandingFromInvoices
+      : Number(customer.opening_balance || 0);
+
+    setCollInvoiceTotal(totalInvoiceSum > 0 ? totalInvoiceSum : effectiveOutstanding);
+    setCollPrevPaid(totalPaidSum);
+    setAmountCollected(effectiveOutstanding > 0 ? effectiveOutstanding.toFixed(2) : "0.00");
     setApplyDiscount(false);
     setDamageDeduction("0");
     setSpecialDiscount("0");
@@ -144,7 +161,7 @@ export default function SalesmanDashboardPage() {
     setIsConfirmingCollection(true);
   };
 
-  // Handle step 2: finalize collection & record to store
+  // Handle step 2: finalize collection & record to store with payment allocations
   const handleFinalizeCollection = async () => {
     if (!collCustomer) return;
 
@@ -156,18 +173,37 @@ export default function SalesmanDashboardPage() {
       if (!currentSalesmanId) {
         throw new Error("Your salesman profile is not set up correctly. Please contact the admin.");
       }
-      await recordPayment({
-        customer_id:      collCustomer.id,
-        salesman_id:      currentSalesmanId,
-        created_by:       currentUser?.id ?? "",
-        amount:           collectedNum,
-        payment_method:   paymentMethod.toLowerCase() as 'cash' | 'cheque' | 'bank_transfer' | 'upi' | 'other',
-        reference_number: referenceNumber.trim() || null,
-        notes:            damageNum > 0 || discountNum > 0
-                            ? `Damage: ${damageNum}, Discount: ${discountNum}`
-                            : null,
-        payment_date:     new Date().toISOString().split("T")[0],
-      });
+
+      // Compute FIFO allocations against customer's unpaid invoices
+      let remaining = collectedNum;
+      const allocations: { invoice_id: string; allocated_amount: number }[] = [];
+      for (const inv of unpaidInvoices) {
+        if (remaining <= 0) break;
+        const alloc = Math.min(remaining, inv.outstanding_amount);
+        if (alloc > 0 && inv.invoice_id) {
+          allocations.push({
+            invoice_id: inv.invoice_id,
+            allocated_amount: alloc,
+          });
+          remaining -= alloc;
+        }
+      }
+
+      await recordPayment(
+        {
+          customer_id:      collCustomer.id,
+          salesman_id:      currentSalesmanId,
+          created_by:       currentUser?.id ?? "",
+          amount:           collectedNum,
+          payment_method:   paymentMethod.toLowerCase() as 'cash' | 'cheque' | 'bank_transfer' | 'upi' | 'other',
+          reference_number: referenceNumber.trim() || null,
+          notes:            damageNum > 0 || discountNum > 0
+                              ? `Damage: ${damageNum}, Discount: ${discountNum}`
+                              : null,
+          payment_date:     new Date().toISOString().split("T")[0],
+        },
+        allocations
+      );
 
       const newReceipt = {
         id: `COL-${payments.length + 102}`,
@@ -379,7 +415,7 @@ export default function SalesmanDashboardPage() {
               <div className="flex items-center justify-between pt-1">
                 <h2 className="text-base font-bold text-slate-900 tracking-tight">Customer Directory</h2>
                 <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#EBF1FF] text-[#4F46E5]">
-                  {filteredCustomers.length > 0 ? `${filteredCustomers.length} Total` : "142 Total"}
+                  {`${filteredCustomers.length} Total`}
                 </span>
               </div>
 
@@ -678,7 +714,7 @@ export default function SalesmanDashboardPage() {
                         <button
                           key={pm.id}
                           type="button"
-                          onClick={() => setPaymentMethod(pm.id as any)}
+                          onClick={() => setPaymentMethod(pm.id as "Cash" | "Cheque" | "Transfer" | "Other")}
                           className={`h-20 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
                             isSelected
                               ? "border-[#0F766E] bg-emerald-50/50 shadow-xs"
@@ -742,7 +778,17 @@ export default function SalesmanDashboardPage() {
                 <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">My Sales Today</span>
-                    <p className="text-2xl font-black text-slate-900 mt-1">₹45,000</p>
+                    <p className="text-2xl font-black text-slate-900 mt-1">
+                      ₹{invoices
+                        .filter(
+                          (i) =>
+                            (i.salesman_id === currentSalesmanId || !currentSalesmanId) &&
+                            i.invoice_date?.startsWith(new Date().toISOString().split("T")[0]) &&
+                            i.status !== "cancelled"
+                        )
+                        .reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0)
+                        .toLocaleString("en-IN")}
+                    </p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-[#0F766E]">
                     <TrendingUp className="w-5 h-5" />

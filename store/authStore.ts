@@ -15,15 +15,11 @@ import { useDashboardStore } from "@/store/dashboardStore";
  * Returns null if the profile row doesn't exist yet.
  */
 async function fetchProfileRole(
-  user: any
+  user: { id: string } | null
 ): Promise<"admin" | "salesman" | null> {
   if (!user) return null;
 
-  // 1. Check user_metadata (useful when logged in via role portals or admin creation)
-  const metaRole = user.user_metadata?.role;
-  if (metaRole === "admin" || metaRole === "salesman") return metaRole;
-
-  // 2. Query `profiles` table
+  // Query `profiles` table directly — database is authoritative source of truth
   try {
     const { data } = await supabase
       .from("profiles")

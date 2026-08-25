@@ -72,6 +72,19 @@ interface AuthGuardProps {
   loginPath?: string;
 }
 
+function AuthSpinner() {
+  return (
+    <div
+      data-component="AuthGuard/Spinner"
+      role="status"
+      aria-label="Loading"
+      className="min-h-screen flex items-center justify-center bg-[#F4F7FA]"
+    >
+      <div className="h-10 w-10 rounded-full border-4 border-slate-200 border-t-teal-600 animate-spin" />
+    </div>
+  );
+}
+
 export function AuthGuard({
   children,
   requireAuth = false,
@@ -126,25 +139,13 @@ export function AuthGuard({
     router,
   ]);
 
-  // Spinner component (reused for both init and redirect states)
-  const Spinner = () => (
-    <div
-      data-component="AuthGuard/Spinner"
-      role="status"
-      aria-label="Loading"
-      className="min-h-screen flex items-center justify-center bg-[#F4F7FA]"
-    >
-      <div className="h-10 w-10 rounded-full border-4 border-slate-200 border-t-teal-600 animate-spin" />
-    </div>
-  );
-
   // While Supabase is still loading the session, show a full-screen spinner.
-  if (!isInitialized) return <Spinner />;
+  if (!isInitialized) return <AuthSpinner />;
 
   // Show spinner while any redirect is in flight (never blank white page)
-  if (requireAuth && !isAuthenticated) return <Spinner />;
-  if (requireAuth && isAuthenticated && requiredRole && role !== requiredRole) return <Spinner />;
-  if (redirectIfAuth && isAuthenticated) return <Spinner />;
+  if (requireAuth && !isAuthenticated) return <AuthSpinner />;
+  if (requireAuth && isAuthenticated && requiredRole && role !== requiredRole) return <AuthSpinner />;
+  if (redirectIfAuth && isAuthenticated) return <AuthSpinner />;
 
   return <>{children}</>;
 }

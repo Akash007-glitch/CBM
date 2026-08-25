@@ -6,9 +6,7 @@ import {
   CreditCard,
   AlertTriangle,
   Plus,
-  MoreHorizontal,
   ChevronDown,
-  ArrowUp,
   FileText,
   DollarSign,
   AlertCircle,
@@ -17,12 +15,11 @@ import { useDashboardStore, useRealtimeMetrics } from "@/store/dashboardStore";
 
 interface ERPAdminDashboardProps {
   onOpenAddCustomer: () => void;
-  onOpenQuickAdd: () => void;
+  onOpenQuickAdd?: () => void;
 }
 
 export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
   onOpenAddCustomer,
-  onOpenQuickAdd,
 }) => {
   const {
     todaySales,
@@ -34,6 +31,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
   } = useRealtimeMetrics();
 
   const activities = useDashboardStore((s) => s.activities);
+  const salesTrend = useDashboardStore((s) => s.salesTrend);
 
   const [trendPeriod, setTrendPeriod] = useState("Last 30 Days");
 
@@ -44,8 +42,33 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
       maximumFractionDigits: 0,
     }).format(val);
 
+  // Compute dynamic points for the sales trend SVG chart
+  const maxSale = Math.max(...salesTrend.map((p) => p.sales), 10000);
+  const chartPoints = salesTrend.length > 0
+    ? salesTrend.map((p, idx) => {
+        const x = (idx / Math.max(salesTrend.length - 1, 1)) * 480 + 10;
+        const y = 160 - (p.sales / maxSale) * 130;
+        return { x, y, sales: p.sales, date: p.date };
+      })
+    : [
+        { x: 10, y: 160, sales: 0, date: "Day 1" },
+        { x: 130, y: 160, sales: 0, date: "Day 7" },
+        { x: 250, y: 160, sales: 0, date: "Day 15" },
+        { x: 370, y: 160, sales: 0, date: "Day 22" },
+        { x: 490, y: 160, sales: 0, date: "Day 30" },
+      ];
+
+  const pathD = chartPoints.length > 0
+    ? `M ${chartPoints[0].x},${chartPoints[0].y} ` +
+      chartPoints.slice(1).map((p) => `L ${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ")
+    : "M 0,160 L 500,160";
+
+  const areaD = chartPoints.length > 0
+    ? `${pathD} L ${chartPoints[chartPoints.length - 1].x},175 L ${chartPoints[0].x},175 Z`
+    : "M 0,160 L 500,160 L 500,175 L 0,175 Z";
+
   return (
-    <div data-component="" className="max-w-[1440px] mx-auto space-y-8">
+    <div data-component="ERPAdminDashboard" className="max-w-[1440px] mx-auto space-y-8">
       {/* Header Section matching Stitch Specification */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
@@ -77,7 +100,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
           <div>
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-[#3E4947] uppercase tracking-wider">
-                Today's Sales
+                Today&apos;s Sales
               </span>
               <div className="p-1.5 rounded-md bg-[#E5EEFF] text-[#0F766E] flex items-center justify-center">
                 <TrendingUp className="w-5 h-5" />
@@ -87,9 +110,8 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
               {formatINR(todaySales)}
             </div>
           </div>
-          <div className="flex items-center gap-1.5 mt-4 text-sm font-medium text-[#0F766E]">
-            <ArrowUp className="w-4 h-4" />
-            <span>12% vs yesterday</span>
+          <div className="flex items-center gap-1.5 mt-4 text-xs font-medium text-[#0F766E]">
+            <span>Live daily invoice total</span>
           </div>
         </div>
 
@@ -99,7 +121,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
           <div>
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-[#3E4947] uppercase tracking-wider">
-                Today's Collections
+                Today&apos;s Collections
               </span>
               <div className="p-1.5 rounded-md bg-[#E5EEFF] text-[#0051D5] flex items-center justify-center">
                 <CreditCard className="w-5 h-5" />
@@ -109,9 +131,8 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
               {formatINR(todayCollections)}
             </div>
           </div>
-          <div className="flex items-center gap-1.5 mt-4 text-sm font-medium text-[#0051D5]">
-            <ArrowUp className="w-4 h-4" />
-            <span>5% vs yesterday</span>
+          <div className="flex items-center gap-1.5 mt-4 text-xs font-medium text-[#0051D5]">
+            <span>Live daily payments received</span>
           </div>
         </div>
 
@@ -131,9 +152,9 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
               {formatINR(totalOutstanding)}
             </div>
           </div>
-          <div className="flex items-center gap-1.5 mt-4 text-sm font-semibold text-[#BA1A1A]">
+          <div className="flex items-center gap-1.5 mt-4 text-xs font-semibold text-[#BA1A1A]">
             <AlertCircle className="w-4 h-4" />
-            <span>High Priority - Action Required</span>
+            <span>Uncollected balance across all invoices</span>
           </div>
         </div>
 
@@ -167,8 +188,6 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
               ₹{mtdRevenueLakhs} Lakhs
             </div>
           </div>
-          {/* Mini Chart visualization matching Stitch specification */}
-
         </div>
       </div>
 
@@ -187,14 +206,12 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
                   className="bg-[#EFF4FF] border border-[#BDC9C6] rounded-md text-sm text-[#0B1C30] px-3 py-1.5 pr-8 focus:outline-none focus:border-[#0F766E] font-medium appearance-none cursor-pointer"
                 >
                   <option>Last 30 Days</option>
-                  <option>This Quarter</option>
-                  <option>Year to Date</option>
                 </select>
                 <ChevronDown className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-[#6E7977] pointer-events-none" />
               </div>
             </div>
 
-            {/* Responsive Line Chart Visualization with Stitch Diagonal Canvas background */}
+            {/* Responsive Line Chart Visualization */}
             <div className="h-[250px] w-full rounded-lg border border-[#E2E8F0] p-4 flex flex-col justify-between relative bg-repeating-linear-45 from-[#F8F9FF] to-[#FFFFFF]">
               <svg className="w-full h-full overflow-visible" viewBox="0 0 500 180" preserveAspectRatio="none">
                 <line x1="0" y1="30" x2="500" y2="30" stroke="#E2E8F0" strokeDasharray="4 4" strokeWidth="1" />
@@ -208,36 +225,20 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
                   </linearGradient>
                 </defs>
 
-                <path
-                  d="M 0,140 Q 60,100 120,60 T 240,85 T 360,35 T 500,50 L 500,180 L 0,180 Z"
-                  fill="url(#stitchSalesGrad)"
-                />
+                <path d={areaD} fill="url(#stitchSalesGrad)" />
+                <path d={pathD} fill="none" stroke="#0F766E" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
 
-                <path
-                  d="M 0,140 Q 60,100 120,60 T 240,85 T 360,35 T 500,50"
-                  fill="none"
-                  stroke="#0F766E"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                />
-
-                {[
-                  { x: 0, y: 140 },
-                  { x: 120, y: 60 },
-                  { x: 240, y: 85 },
-                  { x: 360, y: 35 },
-                  { x: 500, y: 50 },
-                ].map((pt, i) => (
-                  <circle key={i} cx={pt.x} cy={pt.y} r="4.5" fill="#0F766E" stroke="#ffffff" strokeWidth="2" />
+                {chartPoints.map((pt, i) => (
+                  <circle key={i} cx={pt.x} cy={pt.y} r="3.5" fill="#0F766E" stroke="#ffffff" strokeWidth="1.5">
+                    <title>{`${pt.date}: ₹${pt.sales.toLocaleString("en-IN")}`}</title>
+                  </circle>
                 ))}
               </svg>
 
               <div className="flex items-center justify-between text-xs text-[#6E7977] font-medium pt-2 border-t border-[#E2E8F0]">
-                <span>Week 1</span>
-                <span>Week 2</span>
-                <span>Week 3</span>
-                <span>Week 4</span>
-                <span>Current</span>
+                <span>Start</span>
+                <span>Mid-Month</span>
+                <span>Today</span>
               </div>
             </div>
           </div>

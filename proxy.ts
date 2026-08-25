@@ -49,15 +49,11 @@ function loginPathFor(pathname: string) {
 
 async function getUserRole(
   supabase: Awaited<ReturnType<typeof createProxySupabaseClient>>["supabase"],
-  user: any
+  user: { id: string } | null
 ): Promise<string | null> {
   if (!user) return null;
 
-  // 1. Check user_metadata first
-  const metaRole = user.user_metadata?.role;
-  if (metaRole === "admin" || metaRole === "salesman") return metaRole;
-
-  // 2. Check profiles table
+  // Query profiles table directly — database is authoritative source of truth
   try {
     const { data } = await supabase
       .from("profiles")
@@ -66,8 +62,8 @@ async function getUserRole(
       .single();
     const role = (data as { role: string } | null)?.role;
     if (role === "admin" || role === "salesman") return role;
-  } catch (e) {
-    // Ignore error
+  } catch {
+    // Ignore error and return null
   }
 
   return null;

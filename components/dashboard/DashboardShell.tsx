@@ -9,14 +9,11 @@ import {
   Award,
   Wallet,
   Clock,
-  Search,
-  Bell,
   Calendar,
   Plus,
   LogOut,
   Menu,
   X,
-  Radio,
   Package,
 } from "lucide-react";
 import { useDashboardStore } from "@/store/dashboardStore";
@@ -72,26 +69,19 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
     return () => destroy();
   }, [initialize, destroy]);
 
-  const [displayName, setDisplayName] = useState<string>(roleLabel);
-  const [initials, setInitials] = useState<string>(roleLabel.slice(0, 2).toUpperCase());
-
   const effectiveNavItems = navItems ?? DEFAULT_ADMIN_NAV;
 
-  React.useEffect(() => {
-    const name =
-      (user?.user_metadata?.full_name as string | undefined) ??
-      user?.email?.split("@")[0] ??
-      roleLabel;
-    setDisplayName(name);
-    setInitials(
-      name
-        .split(" ")
-        .map((n: string) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-    );
-  }, [user, roleLabel]);
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined) ??
+    user?.email?.split("@")[0] ??
+    roleLabel;
+
+  const initials = displayName
+    .split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 
   const handleLogout = async () => {
     await logout();
@@ -157,7 +147,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
                   w-full flex items-center gap-4 px-3 py-2.5 rounded-lg text-sm font-semibold
                   transition-all duration-200 cursor-pointer text-left
                   ${isActive
-                    ? "bg-white/10 text-white border-r-4 border-[#9CF2E8] shadow-xs"
+                    ? "bg-white/10 text-white shadow-xs"
                     : "text-[#9CF2E8]/80 hover:bg-white/5 hover:text-white"
                   }
                 `}

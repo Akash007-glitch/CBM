@@ -211,7 +211,8 @@ export async function POST(request: NextRequest) {
 
             if (singleErr) {
               // Retry without gstin in case column is missing from older migration
-              const { gstin, ...custWithoutGstin } = cust;
+              const custWithoutGstin = { ...cust };
+              delete custWithoutGstin.gstin;
               const { data: retryCust, error: retryErr } = await dbClient
                 .from("customers")
                 .insert(custWithoutGstin)
