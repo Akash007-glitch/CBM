@@ -5,10 +5,10 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
 import { useLogout, useUser } from "@/store/authStore";
 import { useDashboardStore, Customer } from "@/store/dashboardStore";
 import { getCustomerOutstanding } from "@/lib/services/customerService";
+import type { PaymentWithCustomer } from "@/lib/services/paymentService";
 import {
   Menu,
   Search,
-  SlidersHorizontal,
   Plus,
   Phone,
   FileText,
@@ -62,10 +62,8 @@ export default function SalesmanDashboardPage() {
     return () => destroy();
   }, [initialize, destroy]);
 
-  // Customer Directory Search & Filter state
+  // Customer Directory Search state
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
   // Quick Add Customer Modal
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
@@ -191,16 +189,16 @@ export default function SalesmanDashboardPage() {
 
       await recordPayment(
         {
-          customer_id:      collCustomer.id,
-          salesman_id:      currentSalesmanId,
-          created_by:       currentUser?.id ?? "",
-          amount:           collectedNum,
-          payment_method:   paymentMethod.toLowerCase() as 'cash' | 'cheque' | 'bank_transfer' | 'upi' | 'other',
+          customer_id: collCustomer.id,
+          salesman_id: currentSalesmanId,
+          created_by: currentUser?.id ?? "",
+          amount: collectedNum,
+          payment_method: paymentMethod.toLowerCase() as 'cash' | 'cheque' | 'bank_transfer' | 'upi' | 'other',
           reference_number: referenceNumber.trim() || null,
-          notes:            damageNum > 0 || discountNum > 0
-                              ? `Damage: ${damageNum}, Discount: ${discountNum}`
-                              : null,
-          payment_date:     new Date().toISOString().split("T")[0],
+          notes: damageNum > 0 || discountNum > 0
+            ? `Damage: ${damageNum}, Discount: ${discountNum}`
+            : null,
+          payment_date: new Date().toISOString().split("T")[0],
         },
         allocations
       );
@@ -238,13 +236,13 @@ export default function SalesmanDashboardPage() {
 
     try {
       await addCustomer({
-        name:                 newCompanyName.trim(),
-        email:                null,
-        phone:                newPhone.trim() || null,
-        city:                 newCity.trim() || null,
-        is_active:            true,
-        opening_balance:      0,
-        credit_limit:         0,
+        name: newCompanyName.trim(),
+        email: null,
+        phone: newPhone.trim() || null,
+        city: newCity.trim() || null,
+        is_active: true,
+        opening_balance: 0,
+        credit_limit: 0,
         assigned_salesman_id: currentSalesmanId || null,
       });
 
@@ -264,17 +262,12 @@ export default function SalesmanDashboardPage() {
   // Filtered customer list
   const filteredCustomers = customers.filter((cust) => {
     const q = searchQuery.toLowerCase();
-    const matchesSearch =
+    return (
       cust.name.toLowerCase().includes(q) ||
       (cust.city && cust.city.toLowerCase().includes(q)) ||
       (cust.customer_code && cust.customer_code.toLowerCase().includes(q)) ||
-      (cust.phone && cust.phone.includes(q));
-
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "Inactive" ? !cust.is_active : cust.is_active);
-
-    return matchesSearch && matchesStatus;
+      (cust.phone && cust.phone.includes(q))
+    );
   });
 
   // Calculate deductions & new balance
@@ -294,8 +287,8 @@ export default function SalesmanDashboardPage() {
       <div className="min-h-screen bg-[#F8F9FE] font-sans text-slate-900 flex flex-col justify-between pb-20">
         {/* Toast Alert Banner */}
         {toastMessage && (
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-700 text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 text-sm font-semibold animate-in fade-in zoom-in duration-200">
-            <CheckCircle2 className="w-5 h-5 text-emerald-200 flex-shrink-0" />
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-[#1B2CC1] text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 text-sm font-semibold animate-in fade-in zoom-in duration-200">
+            <CheckCircle2 className="w-5 h-5 text-blue-200 flex-shrink-0" />
             <span>{toastMessage}</span>
           </div>
         )}
@@ -311,7 +304,7 @@ export default function SalesmanDashboardPage() {
               <Menu className="w-6 h-6 text-slate-800" />
             </button>
 
-            <h1 className="text-lg font-bold text-[#005C55] tracking-tight">Sales Portal</h1>
+            <h1 className="text-lg font-bold text-[#1B2CC1] tracking-tight">Sales Portal</h1>
 
             <div className="flex items-center gap-1">
               <button
@@ -353,7 +346,7 @@ export default function SalesmanDashboardPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search customers, phone, or location..."
-                  className="w-full h-11 pl-11 pr-4 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/15 transition-all shadow-2xs"
+                  className="w-full h-11 pl-11 pr-4 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#1B2CC1] focus:ring-2 focus:ring-[#1B2CC1]/15 transition-all shadow-2xs"
                 />
                 {searchQuery && (
                   <button
@@ -365,56 +358,10 @@ export default function SalesmanDashboardPage() {
                 )}
               </div>
 
-              {/* Action buttons bar: Filter & + New */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="relative">
-                  <button
-                    onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                    className={`w-full h-10 border rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer ${
-                      statusFilter !== "all"
-                        ? "border-[#0F766E] text-[#0F766E] bg-emerald-50/50"
-                        : "border-slate-300 text-slate-700 bg-white hover:bg-slate-50"
-                    }`}
-                  >
-                    <SlidersHorizontal className="w-4 h-4 text-slate-600" />
-                    <span>Filter {statusFilter !== "all" ? `(${statusFilter})` : ""}</span>
-                  </button>
-
-                  {/* Filter Popup Menu */}
-                  {showFilterDropdown && (
-                    <div className="absolute left-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-40 animate-in fade-in zoom-in duration-100">
-                      {["all", "Overdue", "Current", "Inactive"].map((st) => (
-                        <button
-                          key={st}
-                          onClick={() => {
-                            setStatusFilter(st);
-                            setShowFilterDropdown(false);
-                          }}
-                          className={`w-full text-left px-4 py-2 text-xs font-semibold flex items-center justify-between ${
-                            statusFilter === st ? "bg-emerald-50 text-[#0F766E]" : "text-slate-700 hover:bg-slate-50"
-                          }`}
-                        >
-                          <span>{st === "all" ? "All Customers" : st}</span>
-                          {statusFilter === st && <CheckCircle2 className="w-3.5 h-3.5 text-[#0F766E]" />}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <button
-                  onClick={() => setIsAddCustomerOpen(true)}
-                  className="h-10 bg-[#0F766E] text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-1.5 shadow-xs hover:bg-[#0F766E]/90 transition-colors cursor-pointer"
-                >
-                  <Plus className="w-4.5 h-4.5 stroke-[2.5]" />
-                  <span>New</span>
-                </button>
-              </div>
-
               {/* Section Header */}
               <div className="flex items-center justify-between pt-1">
                 <h2 className="text-base font-bold text-slate-900 tracking-tight">Customer Directory</h2>
-                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#EBF1FF] text-[#4F46E5]">
+                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#EBF1FF] text-[#1B2CC1]">
                   {`${filteredCustomers.length} Total`}
                 </span>
               </div>
@@ -422,8 +369,8 @@ export default function SalesmanDashboardPage() {
               {/* Customer Cards List */}
               <div className="space-y-3.5">
                 {filteredCustomers.map((cust) => {
-                  const isOverdue  = !cust.is_active;
-                  const isCurrent  = cust.is_active;
+                  const isOverdue = !cust.is_active;
+                  const isCurrent = cust.is_active;
                   const isInactive = !cust.is_active;
                   const statusLabel = cust.is_active ? "Active" : "Inactive";
 
@@ -446,15 +393,14 @@ export default function SalesmanDashboardPage() {
 
                         {/* Status Badge Pill */}
                         <span
-                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                            isOverdue
-                              ? "bg-red-100/90 text-red-700"
-                              : isCurrent
-                              ? "bg-blue-100/90 text-blue-700"
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${isOverdue
+                            ? "bg-red-100/90 text-red-700"
+                            : isCurrent
+                              ? "bg-blue-100/90 text-[#1B2CC1]"
                               : isInactive
-                              ? "bg-slate-100 text-slate-600"
-                              : "bg-emerald-100 text-emerald-800"
-                          }`}
+                                ? "bg-slate-100 text-slate-600"
+                                : "bg-[#1B2CC1]/10 text-[#1B2CC1]"
+                            }`}
                         >
                           {statusLabel}
                         </span>
@@ -467,13 +413,12 @@ export default function SalesmanDashboardPage() {
                             OUTSTANDING
                           </span>
                           <span
-                            className={`text-base font-extrabold ${
-                              Number(cust.opening_balance) > 0
-                                ? isOverdue
-                                  ? "text-red-600"
-                                  : "text-slate-900"
-                                : "text-slate-400"
-                            }`}
+                            className={`text-base font-extrabold ${Number(cust.opening_balance) > 0
+                              ? isOverdue
+                                ? "text-red-600"
+                                : "text-slate-900"
+                              : "text-slate-400"
+                              }`}
                           >
                             ₹ {Number(cust.opening_balance).toLocaleString("en-IN")}
                           </span>
@@ -489,34 +434,23 @@ export default function SalesmanDashboardPage() {
                         </div>
                       </div>
 
-                      {/* Action Buttons Row: Call, Invoice, Collection */}
-                      <div className="grid grid-cols-12 gap-2 mt-4">
+                      {/* Action Buttons Row: Call & Collect */}
+                      <div className="flex items-center gap-2.5 mt-4">
                         <a
                           href={`tel:${cust.phone}`}
-                          className="col-span-5 h-9 border border-slate-200 hover:border-[#0F766E]/40 rounded-xl text-xs font-bold text-[#0F766E] flex items-center justify-center gap-1.5 transition-colors cursor-pointer bg-white"
+                          className="flex-1 h-9 border border-slate-200 hover:border-[#1B2CC1]/40 rounded-xl text-xs font-bold text-[#1B2CC1] flex items-center justify-center gap-1.5 transition-colors cursor-pointer bg-white"
                         >
-                          <Phone className="w-3.5 h-3.5 text-[#0F766E]" />
+                          <Phone className="w-3.5 h-3.5 text-[#1B2CC1]" />
                           <span>Call</span>
                         </a>
 
                         <button
-                          onClick={() => {
-                            setToastMessage(`Viewing Invoices for ${cust.name}`);
-                            setTimeout(() => setToastMessage(null), 1500);
-                          }}
-                          className="col-span-5 h-9 border border-slate-200 hover:border-[#0F766E]/40 rounded-xl text-xs font-bold text-[#0F766E] flex items-center justify-center gap-1.5 transition-colors cursor-pointer bg-white"
-                        >
-                          <FileText className="w-3.5 h-3.5 text-[#0F766E]" />
-                          <span>Invoice</span>
-                        </button>
-
-                        {/* COLLECTION ICON BUTTON -> DIRECTLY OPENS RECORD COLLECTION VIEW */}
-                        <button
                           onClick={() => handleOpenCollection(cust)}
                           title={`Record Collection for ${cust.name}`}
-                          className="col-span-2 h-9 border border-slate-200 hover:border-[#0F766E] rounded-xl flex items-center justify-center transition-all cursor-pointer bg-white hover:bg-emerald-50/50 group"
+                          className="flex-1 h-9 bg-[#1B2CC1] hover:bg-[#1B2CC1]/90 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
                         >
-                          <Banknote className="w-4 h-4 text-[#0F766E] group-hover:scale-110 transition-transform" />
+                          <Banknote className="w-4 h-4 text-blue-200" />
+                          <span>Collect</span>
                         </button>
                       </div>
                     </div>
@@ -549,7 +483,7 @@ export default function SalesmanDashboardPage() {
               <form onSubmit={handleInitiateConfirmation} className="p-4 space-y-4 flex-1 pb-24">
                 {/* Alert Top Banner */}
                 <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-100 text-blue-900 text-xs font-medium leading-relaxed flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#0F766E] shrink-0" />
+                  <ShieldCheck className="w-4 h-4 text-[#1B2CC1] shrink-0" />
                   <span>Verify collection details and click Confirm Collection below to open final review.</span>
                 </div>
 
@@ -620,14 +554,12 @@ export default function SalesmanDashboardPage() {
                     <button
                       type="button"
                       onClick={() => setApplyDiscount(!applyDiscount)}
-                      className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-200 cursor-pointer ${
-                        applyDiscount ? "bg-[#0F766E]" : "bg-slate-300"
-                      }`}
+                      className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-200 cursor-pointer ${applyDiscount ? "bg-[#1B2CC1]" : "bg-slate-300"
+                        }`}
                     >
                       <div
-                        className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200 ${
-                          applyDiscount ? "translate-x-5" : "translate-x-0"
-                        }`}
+                        className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200 ${applyDiscount ? "translate-x-5" : "translate-x-0"
+                          }`}
                       />
                     </button>
                   </div>
@@ -645,7 +577,7 @@ export default function SalesmanDashboardPage() {
                               type="number"
                               value={damageDeduction}
                               onChange={(e) => setDamageDeduction(e.target.value)}
-                              className="w-full h-9 pl-7 pr-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-[#0F766E]"
+                              className="w-full h-9 pl-7 pr-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-[#1B2CC1]"
                             />
                           </div>
                         </div>
@@ -660,7 +592,7 @@ export default function SalesmanDashboardPage() {
                               type="number"
                               value={specialDiscount}
                               onChange={(e) => setSpecialDiscount(e.target.value)}
-                              className="w-full h-9 pl-7 pr-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-[#0F766E]"
+                              className="w-full h-9 pl-7 pr-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-[#1B2CC1]"
                             />
                           </div>
                         </div>
@@ -692,7 +624,7 @@ export default function SalesmanDashboardPage() {
                   </div>
                   <div className="flex justify-between items-center pt-1 text-xs">
                     <span className="text-slate-500 font-semibold">New Balance</span>
-                    <span className="font-bold text-emerald-600">₹{newBalance.toFixed(2)}</span>
+                    <span className="font-bold text-[#1B2CC1]">₹{newBalance.toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -704,7 +636,7 @@ export default function SalesmanDashboardPage() {
 
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      { id: "Cash", label: "Cash", icon: <Banknote className="w-5 h-5 text-[#0F766E]" /> },
+                      { id: "Cash", label: "Cash", icon: <Banknote className="w-5 h-5 text-[#1B2CC1]" /> },
                       { id: "Cheque", label: "Cheque", icon: <FileText className="w-5 h-5 text-slate-600" /> },
                       { id: "Transfer", label: "Transfer", icon: <Landmark className="w-5 h-5 text-slate-600" /> },
                       { id: "Other", label: "Other", icon: <MoreHorizontal className="w-5 h-5 text-slate-600" /> },
@@ -715,14 +647,13 @@ export default function SalesmanDashboardPage() {
                           key={pm.id}
                           type="button"
                           onClick={() => setPaymentMethod(pm.id as "Cash" | "Cheque" | "Transfer" | "Other")}
-                          className={`h-20 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                            isSelected
-                              ? "border-[#0F766E] bg-emerald-50/50 shadow-xs"
-                              : "border-slate-200 bg-white hover:bg-slate-50"
-                          }`}
+                          className={`h-20 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${isSelected
+                            ? "border-[#1B2CC1] bg-blue-50/50 shadow-xs"
+                            : "border-slate-200 bg-white hover:bg-slate-50"
+                            }`}
                         >
                           {pm.icon}
-                          <span className={`text-xs font-bold ${isSelected ? "text-[#0F766E]" : "text-slate-700"}`}>
+                          <span className={`text-xs font-bold ${isSelected ? "text-[#1B2CC1]" : "text-slate-700"}`}>
                             {pm.label}
                           </span>
                         </button>
@@ -739,7 +670,7 @@ export default function SalesmanDashboardPage() {
                     value={referenceNumber}
                     onChange={(e) => setReferenceNumber(e.target.value)}
                     placeholder="Receipt / UPI / Cheque #"
-                    className="w-full h-11 px-3.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder-slate-400 outline-none focus:border-[#0F766E] shadow-2xs"
+                    className="w-full h-11 px-3.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder-slate-400 outline-none focus:border-[#1B2CC1] shadow-2xs"
                   />
                 </div>
 
@@ -754,9 +685,9 @@ export default function SalesmanDashboardPage() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-[2] h-11 bg-[#0F766E] hover:bg-[#0F766E]/90 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                    className="flex-[2] h-11 bg-[#1B2CC1] hover:bg-[#1B2CC1]/90 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
                   >
-                    <ShieldCheck className="w-4 h-4 text-emerald-200" />
+                    <ShieldCheck className="w-4 h-4 text-blue-200" />
                     <span>Confirm Collection ({collectedVal > 0 ? `₹${collectedVal.toLocaleString("en-IN")}` : "₹0"})</span>
                   </button>
                 </div>
@@ -790,7 +721,7 @@ export default function SalesmanDashboardPage() {
                         .toLocaleString("en-IN")}
                     </p>
                   </div>
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-[#0F766E]">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-[#1B2CC1]">
                     <TrendingUp className="w-5 h-5" />
                   </div>
                 </div>
@@ -799,7 +730,7 @@ export default function SalesmanDashboardPage() {
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">My Collections</span>
                     <p className="text-2xl font-black text-slate-900 mt-1">
-                      ₹{payments.reduce((sum: number, c: {amount: number}) => sum + Number(c.amount), 0).toLocaleString("en-IN")}
+                      ₹{payments.reduce((sum: number, c: { amount: number }) => sum + Number(c.amount), 0).toLocaleString("en-IN")}
                     </p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
@@ -817,7 +748,7 @@ export default function SalesmanDashboardPage() {
                   className="w-full p-3 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200 flex items-center justify-between text-xs font-bold text-slate-800 transition-colors cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#0F766E]" />
+                    <Users className="w-4 h-4 text-[#1B2CC1]" />
                     Browse Customer Directory
                   </span>
                   <ChevronRight className="w-4 h-4 text-slate-400" />
@@ -841,7 +772,7 @@ export default function SalesmanDashboardPage() {
                     const defaultCust = customers[0];
                     if (defaultCust) handleOpenCollection(defaultCust);
                   }}
-                  className="px-3 py-2 bg-[#0F766E] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  className="px-3 py-2 bg-[#1B2CC1] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Record</span>
@@ -849,30 +780,42 @@ export default function SalesmanDashboardPage() {
               </div>
 
               <div className="space-y-3">
-                {payments.map((col) => (
-                  <div key={col.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2">
-                    <div className="flex justify-between items-start text-xs font-bold">
-                      <div>
-                        <span className="text-slate-900 block">{col.customer_id}</span>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-[#0F766E] text-[10px] font-bold flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-[#0F766E]" />
-                            Confirmed
-                          </span>
-                          <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-semibold">
-                            {col.payment_method?.replace("_", " ") || "Cash"}
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-emerald-700 font-black text-sm">₹{Number(col.amount).toLocaleString("en-IN")}</span>
-                    </div>
+                {payments.map((col) => {
+                  const customerName =
+                    customers.find((c) => c.id === col.customer_id)?.name ??
+                    (col as PaymentWithCustomer).customers?.name ??
+                    "Unknown Customer";
 
-                    <div className="flex justify-between items-center text-[11px] text-slate-500 pt-2 border-t border-slate-100">
-                      <span>Ref: {col.reference_number || col.payment_number || col.id.slice(0, 8)}</span>
-                      <span>{new Date(col.payment_date).toLocaleDateString("en-IN")}</span>
+                  return (
+                    <div key={col.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+                      <div className="flex justify-between items-start text-xs font-bold">
+                        <div>
+                          <span className="text-slate-900 block font-bold text-sm">{customerName}</span>
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[#1B2CC1] text-[10px] font-bold flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-[#1B2CC1]" />
+                              Confirmed
+                            </span>
+                            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-semibold capitalize">
+                              {col.payment_method?.replace("_", " ") || "Cash"}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[#1B2CC1] font-black text-sm">₹{Number(col.amount).toLocaleString("en-IN")}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+                        <span>Ref: {col.reference_number || (col as unknown as { payment_number?: string }).payment_number || col.id.slice(0, 8)}</span>
+                        <span>{new Date(col.payment_date).toLocaleDateString("en-IN")}</span>
+                      </div>
                     </div>
+                  );
+                })}
+                {payments.length === 0 && (
+                  <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-500 text-xs font-medium">
+                    No collections recorded yet.
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )}
@@ -898,7 +841,7 @@ export default function SalesmanDashboardPage() {
                     value={newCompanyName}
                     onChange={(e) => setNewCompanyName(e.target.value)}
                     placeholder="e.g. Acme Corp"
-                    className="w-full h-10 px-3 border border-slate-200 rounded-xl font-medium outline-none focus:border-[#0F766E]"
+                    className="w-full h-10 px-3 border border-slate-200 rounded-xl font-medium outline-none focus:border-[#1B2CC1]"
                   />
                 </div>
 
@@ -909,7 +852,7 @@ export default function SalesmanDashboardPage() {
                     value={newCity}
                     onChange={(e) => setNewCity(e.target.value)}
                     placeholder="e.g. Mumbai"
-                    className="w-full h-10 px-3 border border-slate-200 rounded-xl font-medium outline-none focus:border-[#0F766E]"
+                    className="w-full h-10 px-3 border border-slate-200 rounded-xl font-medium outline-none focus:border-[#1B2CC1]"
                   />
                 </div>
 
@@ -920,7 +863,7 @@ export default function SalesmanDashboardPage() {
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value)}
                     placeholder="+91 98000 00000"
-                    className="w-full h-10 px-3 border border-slate-200 rounded-xl font-medium outline-none focus:border-[#0F766E]"
+                    className="w-full h-10 px-3 border border-slate-200 rounded-xl font-medium outline-none focus:border-[#1B2CC1]"
                   />
                 </div>
 
@@ -934,7 +877,7 @@ export default function SalesmanDashboardPage() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 h-10 bg-[#0F766E] text-white rounded-xl font-bold hover:bg-[#0F766E]/90 shadow-xs"
+                    className="flex-1 h-10 bg-[#1B2CC1] text-white rounded-xl font-bold hover:bg-[#1B2CC1]/90 shadow-xs"
                   >
                     Create
                   </button>
@@ -951,7 +894,7 @@ export default function SalesmanDashboardPage() {
               {/* Header */}
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center text-[#0F766E]">
+                  <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center text-[#1B2CC1]">
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <div>
@@ -1002,7 +945,7 @@ export default function SalesmanDashboardPage() {
 
                 <div className="pt-2 border-t border-slate-200 flex justify-between items-center">
                   <span className="font-bold text-slate-900">Amount Collected</span>
-                  <span className="text-base font-black text-emerald-700">₹{collectedVal.toFixed(2)}</span>
+                  <span className="text-base font-black text-[#1B2CC1]">₹{collectedVal.toFixed(2)}</span>
                 </div>
 
                 <div className="flex justify-between items-center text-[11px]">
@@ -1028,7 +971,7 @@ export default function SalesmanDashboardPage() {
                 <button
                   type="button"
                   onClick={handleFinalizeCollection}
-                  className="flex-[1.5] h-11 bg-[#0F766E] text-white rounded-xl text-xs font-bold hover:bg-[#0F766E]/90 shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                  className="flex-[1.5] h-11 bg-[#1B2CC1] text-white rounded-xl text-xs font-bold hover:bg-[#1B2CC1]/90 shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                 >
                   <Check className="w-4 h-4 text-white stroke-[3]" />
                   <span>Confirm & Submit</span>
@@ -1042,7 +985,7 @@ export default function SalesmanDashboardPage() {
         {receiptData && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
             <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden border border-slate-200 p-5 space-y-4 text-center">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 text-[#0F766E] mx-auto flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-blue-100 text-[#1B2CC1] mx-auto flex items-center justify-center">
                 <FileCheck className="w-6 h-6" />
               </div>
 
@@ -1051,14 +994,14 @@ export default function SalesmanDashboardPage() {
                 <p className="text-xs text-slate-500 font-medium mt-0.5">Receipt #{receiptData.id}</p>
               </div>
 
-              <div className="bg-emerald-50/60 rounded-xl p-4 border border-emerald-100 text-left space-y-2 text-xs">
+              <div className="bg-blue-50/60 rounded-xl p-4 border border-blue-100 text-left space-y-2 text-xs">
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500 font-semibold">Customer:</span>
                   <span className="font-bold text-slate-900">{receiptData.customerName}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500 font-semibold">Amount Paid:</span>
-                  <span className="font-extrabold text-emerald-700 text-sm">
+                  <span className="font-extrabold text-[#1B2CC1] text-sm">
                     ₹{receiptData.amount.toLocaleString("en-IN")}
                   </span>
                 </div>
@@ -1098,7 +1041,7 @@ export default function SalesmanDashboardPage() {
                     setReceiptData(null);
                     setActiveTab("collections");
                   }}
-                  className="flex-1 h-10 bg-[#0F766E] text-white rounded-xl text-xs font-bold hover:bg-[#0F766E]/90 shadow-xs"
+                  className="flex-1 h-10 bg-[#1B2CC1] text-white rounded-xl text-xs font-bold hover:bg-[#1B2CC1]/90 shadow-xs"
                 >
                   View Collections
                 </button>
@@ -1113,9 +1056,8 @@ export default function SalesmanDashboardPage() {
             {/* Home Tab */}
             <button
               onClick={() => setActiveTab("home")}
-              className={`flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${
-                activeTab === "home" ? "text-[#0F766E]" : "text-slate-400 hover:text-slate-600"
-              }`}
+              className={`flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${activeTab === "home" ? "text-[#1B2CC1]" : "text-slate-400 hover:text-slate-600"
+                }`}
             >
               <Home className="w-5 h-5" />
               <span className="text-[11px] font-bold">Home</span>
@@ -1124,11 +1066,10 @@ export default function SalesmanDashboardPage() {
             {/* Customers Tab (Active Highlighted Pill) */}
             <button
               onClick={() => setActiveTab("customers")}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-full cursor-pointer transition-all ${
-                activeTab === "customers"
-                  ? "bg-[#E6F4F1] text-[#0F766E]"
-                  : "text-slate-400 hover:text-slate-600"
-              }`}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-full cursor-pointer transition-all ${activeTab === "customers"
+                ? "bg-[#1B2CC1]/10 text-[#1B2CC1]"
+                : "text-slate-400 hover:text-slate-600"
+                }`}
             >
               <Users className="w-5 h-5" />
               <span className="text-[11px] font-bold">Customers</span>
@@ -1137,11 +1078,10 @@ export default function SalesmanDashboardPage() {
             {/* Collections Tab */}
             <button
               onClick={() => setActiveTab("collections")}
-              className={`flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${
-                activeTab === "collections"
-                  ? "text-[#0F766E]"
-                  : "text-slate-400 hover:text-slate-600"
-              }`}
+              className={`flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${activeTab === "collections"
+                ? "text-[#1B2CC1]"
+                : "text-slate-400 hover:text-slate-600"
+                }`}
             >
               <Wallet className="w-5 h-5" />
               <span className="text-[11px] font-bold">Collections</span>

@@ -6,8 +6,13 @@ import {
   Plus,
   CheckCircle2,
   AlertTriangle,
+  Trash2,
+  UserX,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { useDashboardStore } from "@/store/dashboardStore";
+import type { CustomerRow } from "@/lib/services/customerService";
 import type { PaymentRow } from "@/lib/services/paymentService";
 import type { InvoiceRow } from "@/lib/services/invoiceService";
 
@@ -108,58 +113,58 @@ export const AddCustomerModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
 
           {/* BASIC INFORMATION */}
           <section className="flex flex-col gap-3">
-            <h3 className="text-xs font-bold text-[#0F766E] uppercase tracking-widest">BASIC INFORMATION</h3>
+            <h3 className="text-xs font-bold text-[#1B2CC1] uppercase tracking-widest">BASIC INFORMATION</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-[#3E4947]">Company Name *</label>
                 <input type="text" required value={companyName} onChange={(e) => setCompanyName(e.target.value)}
                   placeholder="e.g. Acme Corp"
-                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] text-[#0B1C30] outline-none font-medium" />
+                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium" />
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-[#3E4947]">Contact Person</label>
                 <input type="text" value={contactPerson} onChange={(e) => setContactPerson(e.target.value)}
                   placeholder="Full Name"
-                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] text-[#0B1C30] outline-none font-medium" />
+                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium" />
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-[#3E4947]">Phone</label>
                 <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 000-0000"
-                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] text-[#0B1C30] outline-none font-medium" />
+                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium" />
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-[#3E4947]">Email</label>
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="billing@company.com"
-                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] text-[#0B1C30] outline-none font-medium" />
+                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium" />
               </div>
             </div>
           </section>
 
           {/* ADDRESS */}
           <section className="flex flex-col gap-3">
-            <h3 className="text-xs font-bold text-[#0F766E] uppercase tracking-widest">ADDRESS</h3>
+            <h3 className="text-xs font-bold text-[#1B2CC1] uppercase tracking-widest">ADDRESS</h3>
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-[#3E4947]">Street Address</label>
                 <input type="text" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)}
                   placeholder="123 Business Way"
-                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] text-[#0B1C30] outline-none font-medium" />
+                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium" />
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-[#3E4947]">City</label>
                   <input type="text" value={city} onChange={(e) => setCity(e.target.value)}
-                    className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] text-[#0B1C30] outline-none font-medium" />
+                    className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium" />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-[#3E4947]">State</label>
                   <input type="text" value={state} onChange={(e) => setState(e.target.value)}
-                    className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] text-[#0B1C30] outline-none font-medium" />
+                    className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium" />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-[#3E4947]">ZIP/Pincode</label>
                   <input type="text" value={zip} onChange={(e) => setZip(e.target.value)}
-                    className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] text-[#0B1C30] outline-none font-medium" />
+                    className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium" />
                 </div>
               </div>
             </div>
@@ -168,11 +173,11 @@ export const AddCustomerModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
           {/* ASSIGNMENT & FINANCIALS */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col gap-3">
-              <h3 className="text-xs font-bold text-[#0F766E] uppercase tracking-widest">ASSIGNMENT</h3>
+              <h3 className="text-xs font-bold text-[#1B2CC1] uppercase tracking-widest">ASSIGNMENT</h3>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-[#3E4947]">Assigned Salesman</label>
                 <select value={assignedSalesman} onChange={(e) => setAssignedSalesman(e.target.value)}
-                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] text-[#0B1C30] outline-none font-medium appearance-none cursor-pointer">
+                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium appearance-none cursor-pointer">
                   <option value="">Select Salesman</option>
                   {salesmen.map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
@@ -181,18 +186,18 @@ export const AddCustomerModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <h3 className="text-xs font-bold text-[#0F766E] uppercase tracking-widest">FINANCIALS</h3>
+              <h3 className="text-xs font-bold text-[#1B2CC1] uppercase tracking-widest">FINANCIALS</h3>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-[#3E4947]">Credit Limit (₹)</label>
                 <input type="number" value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)}
                   placeholder="₹ 0.00"
-                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] text-[#0B1C30] outline-none font-medium font-mono" />
+                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium font-mono" />
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-[#3E4947]">Opening Balance (₹)</label>
                 <input type="number" value={openingBalance} onChange={(e) => setOpeningBalance(e.target.value)}
                   placeholder="₹ 0.00"
-                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E] text-[#0B1C30] outline-none font-medium font-mono" />
+                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium font-mono" />
               </div>
             </div>
           </section>
@@ -205,7 +210,7 @@ export const AddCustomerModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
             Cancel
           </button>
           <button type="submit" form="add-customer-form"
-            className="h-10 px-6 rounded-lg bg-[#0F766E] text-white font-semibold text-sm hover:bg-[#0F766E]/90 transition-opacity shadow-xs cursor-pointer">
+            className="h-10 px-6 rounded-lg bg-[#1B2CC1] text-white font-semibold text-sm hover:bg-[#1B2CC1]/90 transition-opacity shadow-xs cursor-pointer">
             Create Customer
           </button>
         </div>
@@ -222,17 +227,81 @@ export const QuickAddModal: React.FC<ModalProps> = (props) => <ImportDayBookModa
 // ── Sub-Pages Views ───────────────────────────────────────────────────────────
 
 export const CustomersView: React.FC<{ onOpenAddCustomer: () => void }> = ({ onOpenAddCustomer }) => {
-  const customers = useDashboardStore((s) => s.customers);
+  const customers          = useDashboardStore((s) => s.customers);
+  const deleteCustomer     = useDashboardStore((s) => s.deleteCustomer);
+  const deactivateCustomer = useDashboardStore((s) => s.deactivateCustomer);
+
+  const [customerToDelete, setCustomerToDelete] = useState<CustomerRow | null>(null);
+  const [isProcessing, setIsProcessing]         = useState(false);
+  const [deleteError, setDeleteError]           = useState<string | null>(null);
+  const [canFallbackDeactivate, setCanFallbackDeactivate] = useState(false);
+  const [toastMsg, setToastMsg]                 = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (!customerToDelete) return;
+    setIsProcessing(true);
+    setDeleteError(null);
+    setCanFallbackDeactivate(false);
+
+    try {
+      await deleteCustomer(customerToDelete.id);
+      setToastMsg(`Customer "${customerToDelete.name}" removed successfully.`);
+      setCustomerToDelete(null);
+      setTimeout(() => setToastMsg(null), 3000);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to delete customer.";
+      // Check if it's a foreign key constraint violation
+      if (
+        msg.toLowerCase().includes("foreign key") ||
+        msg.toLowerCase().includes("violates") ||
+        msg.toLowerCase().includes("reference")
+      ) {
+        setDeleteError(
+          "Cannot permanently delete this customer because they have existing invoices or payment transactions linked to them."
+        );
+        setCanFallbackDeactivate(true);
+      } else {
+        setDeleteError(msg);
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDeactivate = async () => {
+    if (!customerToDelete) return;
+    setIsProcessing(true);
+    setDeleteError(null);
+
+    try {
+      await deactivateCustomer(customerToDelete.id);
+      setToastMsg(`Customer "${customerToDelete.name}" marked as Inactive.`);
+      setCustomerToDelete(null);
+      setTimeout(() => setToastMsg(null), 3000);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Failed to deactivate customer.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div data-component="CustomersView" className="space-y-6 max-w-[1440px] mx-auto">
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div className="fixed top-4 right-4 z-50 bg-emerald-700 text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 text-sm font-semibold animate-in fade-in slide-in-from-top-2 duration-200">
+          <CheckCircle2 className="w-5 h-5 text-emerald-200 flex-shrink-0" />
+          <span>{toastMsg}</span>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-[#0B1C30]">Customer Directory</h2>
           <p className="text-sm text-[#3E4947]">Real-time balances &amp; purchase histories</p>
         </div>
         <button onClick={onOpenAddCustomer}
-          className="flex items-center gap-2 px-4 py-2 bg-[#0F766E] text-white text-sm font-semibold rounded-lg shadow-xs hover:bg-[#0F766E]/90 cursor-pointer">
+          className="flex items-center gap-2 px-4 py-2 bg-[#1B2CC1] text-white text-sm font-semibold rounded-lg shadow-xs hover:bg-[#1B2CC1]/90 cursor-pointer">
           <Plus className="w-4 h-4" /> New Customer
         </button>
       </div>
@@ -246,11 +315,12 @@ export const CustomersView: React.FC<{ onOpenAddCustomer: () => void }> = ({ onO
               <th className="p-4">City</th>
               <th className="p-4">Opening Balance</th>
               <th className="p-4">Status</th>
+              <th className="p-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E2E8F0]">
             {customers.map((c) => (
-              <tr key={c.id} className="hover:bg-[#F8F9FF]">
+              <tr key={c.id} className="hover:bg-[#F8F9FF] transition-colors">
                 <td className="p-4 font-bold text-[#0B1C30]">
                   {c.name}
                   {c.customer_code && <span className="text-[#3E4947] font-normal ml-1">({c.customer_code})</span>}
@@ -263,15 +333,140 @@ export const CustomersView: React.FC<{ onOpenAddCustomer: () => void }> = ({ onO
                   ₹{Number(c.opening_balance).toLocaleString("en-IN")}
                 </td>
                 <td className="p-4">
-                  <span className={`px-2.5 py-1 rounded text-xs font-bold ${c.is_active ? "bg-[#0F766E]/10 text-[#0F766E]" : "bg-gray-100 text-gray-500"}`}>
+                  <span className={`px-2.5 py-1 rounded text-xs font-bold ${c.is_active ? "bg-[#1B2CC1]/10 text-[#1B2CC1]" : "bg-gray-100 text-gray-500"}`}>
                     {c.is_active ? "Active" : "Inactive"}
                   </span>
                 </td>
+                <td className="p-4 text-right">
+                  <button
+                    onClick={() => {
+                      setCustomerToDelete(c);
+                      setDeleteError(null);
+                      setCanFallbackDeactivate(false);
+                    }}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer inline-flex items-center gap-1 text-xs font-semibold"
+                    title="Remove customer"
+                    aria-label={`Remove customer ${c.name}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Remove</span>
+                  </button>
+                </td>
               </tr>
             ))}
+            {customers.length === 0 && (
+              <tr>
+                <td colSpan={6} className="p-8 text-center text-slate-500 font-medium">
+                  No customers found. Click &quot;New Customer&quot; above to add one.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Delete / Remove Customer Confirmation Modal */}
+      {customerToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1C30]/50 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-[#E2E8F0] p-6 space-y-5 animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-xl bg-red-100 flex items-center justify-center text-red-600 flex-shrink-0">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-bold text-[#0B1C30]">Remove Customer</h3>
+                <p className="text-xs text-[#6E7977] mt-0.5">
+                  Are you sure you want to remove <strong className="text-[#0B1C30]">{customerToDelete.name}</strong>?
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setCustomerToDelete(null);
+                  setDeleteError(null);
+                }}
+                disabled={isProcessing}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Error / Conflict Alert */}
+            {deleteError && (
+              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-2">
+                <div className="flex items-center gap-2 font-bold text-amber-800">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>Notice</span>
+                </div>
+                <p>{deleteError}</p>
+                {canFallbackDeactivate && (
+                  <p className="font-semibold text-amber-950">
+                    Tip: You can deactivate this customer instead so they no longer appear as an active account while preserving past ledger and invoice history.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Customer Details Box */}
+            <div className="bg-[#F8F9FF] rounded-xl p-3.5 border border-[#E2E8F0] text-xs space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-[#6E7977]">Customer Code:</span>
+                <span className="font-semibold text-[#0B1C30]">{customerToDelete.customer_code ?? "—"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#6E7977]">Opening Balance:</span>
+                <span className="font-semibold text-[#BA1A1A]">₹{Number(customerToDelete.opening_balance).toLocaleString("en-IN")}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#6E7977]">Current Status:</span>
+                <span className="font-semibold text-[#0B1C30]">{customerToDelete.is_active ? "Active" : "Inactive"}</span>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomerToDelete(null);
+                  setDeleteError(null);
+                }}
+                disabled={isProcessing}
+                className="flex-1 h-10 border border-[#BDC9C6] rounded-xl text-xs font-semibold text-[#0B1C30] hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              {customerToDelete.is_active && (
+                <button
+                  type="button"
+                  onClick={handleDeactivate}
+                  disabled={isProcessing}
+                  className="flex-1 h-10 border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <UserX className="w-3.5 h-3.5" />
+                  <span>Deactivate</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isProcessing}
+                className="flex-1 h-10 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+              >
+                {isProcessing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -291,7 +486,7 @@ export const SalesmenView: React.FC = () => {
           const initials = s.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
           return (
             <div key={s.id} className="bg-white p-6 rounded-[14px] border border-[#E2E8F0] shadow-xs flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#0F766E] text-white text-base font-bold flex items-center justify-center">
+              <div className="w-12 h-12 rounded-xl bg-[#1B2CC1] text-white text-base font-bold flex items-center justify-center">
                 {initials}
               </div>
               <div className="flex-1 min-w-0">
@@ -299,7 +494,7 @@ export const SalesmenView: React.FC = () => {
                 <p className="text-xs text-[#6E7977]">{s.email ?? s.profiles?.email}</p>
                 <div className="flex items-center gap-4 mt-2 text-xs font-semibold text-[#3E4947]">
                   {s.employee_code && <span>Code: {s.employee_code}</span>}
-                  <span className={s.is_active ? "text-[#0F766E]" : "text-gray-400"}>
+                  <span className={s.is_active ? "text-[#1B2CC1]" : "text-gray-400"}>
                     {s.is_active ? "Active" : "Inactive"}
                   </span>
                 </div>
@@ -313,7 +508,8 @@ export const SalesmenView: React.FC = () => {
 };
 
 export const CollectionsView: React.FC<{ onOpenQuickAdd: () => void }> = ({ onOpenQuickAdd }) => {
-  const payments = useDashboardStore((s) => s.payments);
+  const payments  = useDashboardStore((s) => s.payments);
+  const customers = useDashboardStore((s) => s.customers);
 
   return (
     <div data-component="CollectionsView" className="space-y-6 max-w-[1440px] mx-auto">
@@ -323,7 +519,7 @@ export const CollectionsView: React.FC<{ onOpenQuickAdd: () => void }> = ({ onOp
           <p className="text-sm text-[#3E4947]">Real-time log of payments received</p>
         </div>
         <button onClick={onOpenQuickAdd}
-          className="px-4 py-2 bg-[#0F766E] text-white text-sm font-semibold rounded-lg shadow-xs hover:bg-[#0F766E]/90 cursor-pointer">
+          className="px-4 py-2 bg-[#1B2CC1] text-white text-sm font-semibold rounded-lg shadow-xs hover:bg-[#1B2CC1]/90 cursor-pointer">
           + Log Payment
         </button>
       </div>
@@ -340,15 +536,29 @@ export const CollectionsView: React.FC<{ onOpenQuickAdd: () => void }> = ({ onOp
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E2E8F0]">
-            {payments.map((p) => (
-              <tr key={p.id} className="hover:bg-[#F8F9FF]">
-                <td className="p-4 font-mono font-semibold text-[#3E4947]">{p.payment_number ?? p.id.slice(0, 8)}</td>
-                <td className="p-4 font-bold text-[#0B1C30]">{(p as PaymentRow & { customers?: { name: string } | null }).customers?.name ?? p.customer_id}</td>
-                <td className="p-4 font-bold text-[#0F766E]">₹{Number(p.amount).toLocaleString("en-IN")}</td>
-                <td className="p-4 text-[#3E4947] capitalize">{p.payment_method.replace("_", " ")}</td>
-                <td className="p-4 text-[#3E4947]">{new Date(p.payment_date).toLocaleDateString("en-IN")}</td>
+            {payments.map((p) => {
+              const custName =
+                customers.find((c) => c.id === p.customer_id)?.name ??
+                (p as PaymentRow & { customers?: { name: string } | null }).customers?.name ??
+                "Unknown Customer";
+
+              return (
+                <tr key={p.id} className="hover:bg-[#F8F9FF]">
+                  <td className="p-4 font-mono font-semibold text-[#3E4947]">{p.payment_number ?? p.id.slice(0, 8)}</td>
+                  <td className="p-4 font-bold text-[#0B1C30]">{custName}</td>
+                  <td className="p-4 font-bold text-[#1B2CC1]">₹{Number(p.amount).toLocaleString("en-IN")}</td>
+                  <td className="p-4 text-[#3E4947] capitalize">{p.payment_method.replace("_", " ")}</td>
+                  <td className="p-4 text-[#3E4947]">{new Date(p.payment_date).toLocaleDateString("en-IN")}</td>
+                </tr>
+              );
+            })}
+            {payments.length === 0 && (
+              <tr>
+                <td colSpan={5} className="p-8 text-center text-slate-500 font-medium">
+                  No payment collections logged yet.
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

@@ -26,6 +26,8 @@ import {
 import {
   getCustomers,
   createCustomer,
+  deactivateCustomer,
+  deleteCustomer,
   type CustomerRow,
 } from "@/lib/services/customerService";
 import {
@@ -91,6 +93,8 @@ interface DashboardState {
   initialize: () => Promise<void>;
   refresh: () => Promise<void>;
   addCustomer: (payload: TablesInsert<"customers">) => Promise<CustomerRow>;
+  deactivateCustomer: (id: string) => Promise<void>;
+  deleteCustomer: (id: string) => Promise<void>;
   createInvoice: (payload: CreateInvoicePayload) => Promise<InvoiceRow>;
   recordPayment: (
     paymentPayload: TablesInsert<"payments">,
@@ -305,6 +309,24 @@ export const useDashboardStore = create<DashboardState>((set, get) => {
       return customer;
     },
 
+    // ── deactivateCustomer ─────────────────────────────────────────────────────
+    deactivateCustomer: async (id: string) => {
+      await deactivateCustomer(id);
+      set((state) => ({
+        customers: state.customers.map((c) =>
+          c.id === id ? { ...c, is_active: false } : c
+        ),
+      }));
+    },
+
+    // ── deleteCustomer ─────────────────────────────────────────────────────────
+    deleteCustomer: async (id: string) => {
+      await deleteCustomer(id);
+      set((state) => ({
+        customers: state.customers.filter((c) => c.id !== id),
+      }));
+    },
+
     // ── createInvoice ──────────────────────────────────────────────────────────
     createInvoice: async (payload) => {
       const invoice = await createInvoice(payload);
@@ -316,6 +338,29 @@ export const useDashboardStore = create<DashboardState>((set, get) => {
     recordPayment: async (paymentPayload, allocations = []) => {
       const { payment } = await createAndAllocatePayment(paymentPayload, allocations);
       set((state) => ({ payments: [payment, ...state.payments] }));
+
+      // Automatically log payment activity with resolved customer name
+      try {
+        const customer = get().customers.find((c) => c.id === paymentPayload.customer_id);
+        const customerName = customer?.name ?? "Customer";
+        const formattedAmount = Number(paymentPayload.amount).toLocaleString("en-IN");
+        await supabase.rpc("log_activity", {
+          p_action: "payment_received",
+          p_description: `Payment of ₹${formattedAmount} received from ${customerName}`,
+          p_entity_type: "payments",
+          p_entity_id: payment.id,
+          p_user_id: paymentPayload.created_by || null,
+          p_metadata: {
+            customer_id: paymentPayload.customer_id,
+            customer_name: customerName,
+            amount: paymentPayload.amount,
+            payment_method: paymentPayload.payment_method,
+          },
+        });
+      } catch (logErr) {
+        console.warn("Could not log payment activity:", logErr);
+      }
+
       return payment;
     },
 

@@ -32,6 +32,37 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
 
   const activities = useDashboardStore((s) => s.activities);
   const salesTrend = useDashboardStore((s) => s.salesTrend);
+  const customers  = useDashboardStore((s) => s.customers);
+
+  const formatActivityText = (description: string | null, metadata: unknown) => {
+    if (!description) return "";
+    let text = description;
+
+    if (metadata && typeof metadata === "object") {
+      const meta = metadata as Record<string, unknown>;
+      if (typeof meta.customer_name === "string" && meta.customer_name) {
+        text = text.replace(/from\s+([0-9a-f-]{36})/i, `from ${meta.customer_name}`);
+        text = text.replace(/for\s+([0-9a-f-]{36})/i, `for ${meta.customer_name}`);
+      } else if (typeof meta.customer_id === "string") {
+        const found = customers.find((c) => c.id === meta.customer_id);
+        if (found) {
+          text = text.replace(meta.customer_id, found.name);
+        }
+      }
+    }
+
+    // Replace any matching customer UUIDs found anywhere in the description text
+    const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+    text = text.replace(uuidRegex, (matchedId) => {
+      const found = customers.find((c) => c.id.toLowerCase() === matchedId.toLowerCase());
+      return found ? found.name : matchedId;
+    });
+
+    // Strip any remaining literal 'customer_id=' prefix
+    text = text.replace(/customer_id=\s*/gi, "");
+
+    return text;
+  };
 
   const [trendPeriod, setTrendPeriod] = useState("Last 30 Days");
 
@@ -84,9 +115,9 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
           {/* Add Customer Button */}
           <button
             onClick={onOpenAddCustomer}
-            className="bg-white border border-[#BDC9C6] text-[#0F766E] px-4 h-10 rounded-lg text-sm font-semibold hover:bg-[#F8F9FF] transition-colors shadow-2xs flex items-center gap-2 cursor-pointer"
+            className="bg-white border border-[#BDC9C6] text-[#1B2CC1] px-4 h-10 rounded-lg text-sm font-semibold hover:bg-[#F8F9FF] transition-colors shadow-2xs flex items-center gap-2 cursor-pointer"
           >
-            <Plus className="w-4 h-4 text-[#0F766E]" />
+            <Plus className="w-4 h-4 text-[#1B2CC1]" />
             <span>Add Customer</span>
           </button>
         </div>
@@ -96,13 +127,13 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
         {/* Card 1: Today's Sales */}
         <div className="bg-white border border-[#E2E8F0] rounded-[14px] p-6 shadow-xs xl:col-span-2 flex flex-col justify-between relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#0F766E]/5 rounded-full blur-xl group-hover:bg-[#0F766E]/10 transition-colors pointer-events-none" />
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#1B2CC1]/5 rounded-full blur-xl group-hover:bg-[#1B2CC1]/10 transition-colors pointer-events-none" />
           <div>
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-[#3E4947] uppercase tracking-wider">
                 Today&apos;s Sales
               </span>
-              <div className="p-1.5 rounded-md bg-[#E5EEFF] text-[#0F766E] flex items-center justify-center">
+              <div className="p-1.5 rounded-md bg-[#E5EEFF] text-[#1B2CC1] flex items-center justify-center">
                 <TrendingUp className="w-5 h-5" />
               </div>
             </div>
@@ -110,7 +141,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
               {formatINR(todaySales)}
             </div>
           </div>
-          <div className="flex items-center gap-1.5 mt-4 text-xs font-medium text-[#0F766E]">
+          <div className="flex items-center gap-1.5 mt-4 text-xs font-medium text-[#1B2CC1]">
             <span>Live daily invoice total</span>
           </div>
         </div>
@@ -203,7 +234,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
                 <select
                   value={trendPeriod}
                   onChange={(e) => setTrendPeriod(e.target.value)}
-                  className="bg-[#EFF4FF] border border-[#BDC9C6] rounded-md text-sm text-[#0B1C30] px-3 py-1.5 pr-8 focus:outline-none focus:border-[#0F766E] font-medium appearance-none cursor-pointer"
+                  className="bg-[#EFF4FF] border border-[#BDC9C6] rounded-md text-sm text-[#0B1C30] px-3 py-1.5 pr-8 focus:outline-none focus:border-[#1B2CC1] font-medium appearance-none cursor-pointer"
                 >
                   <option>Last 30 Days</option>
                 </select>
@@ -220,16 +251,16 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
 
                 <defs>
                   <linearGradient id="stitchSalesGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#0F766E" stopOpacity="0.2" />
-                    <stop offset="100%" stopColor="#0F766E" stopOpacity="0.0" />
+                    <stop offset="0%" stopColor="#1B2CC1" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor="#1B2CC1" stopOpacity="0.0" />
                   </linearGradient>
                 </defs>
 
                 <path d={areaD} fill="url(#stitchSalesGrad)" />
-                <path d={pathD} fill="none" stroke="#0F766E" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                <path d={pathD} fill="none" stroke="#1B2CC1" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
 
                 {chartPoints.map((pt, i) => (
-                  <circle key={i} cx={pt.x} cy={pt.y} r="3.5" fill="#0F766E" stroke="#ffffff" strokeWidth="1.5">
+                  <circle key={i} cx={pt.x} cy={pt.y} r="3.5" fill="#1B2CC1" stroke="#ffffff" strokeWidth="1.5">
                     <title>{`${pt.date}: ₹${pt.sales.toLocaleString("en-IN")}`}</title>
                   </circle>
                 ))}
@@ -269,7 +300,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
                 icon = <AlertTriangle className="w-4 h-4 text-[#BA1A1A]" />;
                 iconBg = "bg-[#FFDAD6]/30";
               } else if (!isPayment) {
-                icon = <FileText className="w-4 h-4 text-[#0F766E]" />;
+                icon = <FileText className="w-4 h-4 text-[#1B2CC1]" />;
                 iconBg = "bg-[#E5EEFF]";
               }
 
@@ -286,7 +317,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-[#0B1C30]">{act.action?.replace(/_/g, ' ')}</div>
-                    <div className="text-sm text-[#3E4947] font-normal">{act.description}</div>
+                    <div className="text-sm text-[#3E4947] font-normal">{formatActivityText(act.description, act.metadata)}</div>
                     <div className="text-xs text-[#6E7977] mt-1 font-medium">{timeAgo}</div>
                   </div>
                 </div>
@@ -296,7 +327,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
 
           <button
             // onClick={}
-            className="w-full mt-6 py-2.5 border border-[#E2E8F0] rounded-lg text-[#0F766E] font-semibold text-sm hover:bg-[#F8F9FF] transition-colors cursor-pointer"
+            className="w-full mt-6 py-2.5 border border-[#E2E8F0] rounded-lg text-[#1B2CC1] font-semibold text-sm hover:bg-[#F8F9FF] transition-colors cursor-pointer"
           >
             View All Activity
           </button>

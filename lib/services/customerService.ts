@@ -130,6 +130,20 @@ export async function deactivateCustomer(id: string): Promise<void> {
   if (error) throw new Error(`deactivateCustomer: ${error.message}`);
 }
 
+/**
+ * Deletes a customer permanently from the database.
+ * If foreign key references exist (e.g. invoices/payments), Postgres will throw an error.
+ */
+export async function deleteCustomer(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("customers")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw new Error(`deleteCustomer: ${error.message}`);
+}
+
+
 // ── Transaction History ───────────────────────────────────────────────────────
 
 /**

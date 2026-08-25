@@ -6,8 +6,8 @@ export const BrandHeader: React.FC = () => {
     <div data-component="BrandHeader" className="w-full text-center flex flex-col items-center mb-5">
       <div className="flex items-center justify-center gap-2.5 mb-1.5">
         {/* Custom Shield Emblem Icon */}
-        <div className="relative w-8 h-8 rounded-lg bg-[#0D7663] text-white flex items-center justify-center shadow-xs">
-          <Shield className="w-5 h-5 fill-[#0D7663] stroke-white stroke-[2.2]" />
+        <div className="relative w-8 h-8 rounded-lg bg-[#1B2CC1] text-white flex items-center justify-center shadow-xs">
+          <Shield className="w-5 h-5 fill-[#1B2CC1] stroke-white stroke-[2.2]" />
           <Lock className="w-2.5 h-2.5 text-white absolute center stroke-[3]" />
         </div>
         <h1 className="text-[26px] font-bold text-slate-900 tracking-tight font-sans">
@@ -19,8 +19,8 @@ export const BrandHeader: React.FC = () => {
         Secure System Authentication
       </p>
 
-      {/* Accent Teal Divider Line */}
-      <div className="w-full h-[3.5px] bg-[#0D7663] rounded-full mt-5 mb-6 opacity-95 teal-divider-glow" />
+      {/* Accent Blue Divider Line */}
+      <div className="w-full h-[3.5px] bg-[#1B2CC1] rounded-full mt-5 mb-6 opacity-95 teal-divider-glow" />
     </div>
   );
 };

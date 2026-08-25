@@ -2,9 +2,9 @@
 
 @theme inline {
   --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
-  --color-teal-brand: #0F766E;
-  --color-teal-brand-dark: #0D6E66;
-  --color-teal-brand-hover: #0B635B;
+  --color-teal-brand: #1B2CC1;
+  --color-teal-brand-dark: #15239E;
+  --color-teal-brand-hover: #0E1A7A;
 }
 
 :root {
@@ -20,11 +20,11 @@ body {
 
 /* Custom smooth subtle glow & background pattern */
 .bg-login-gradient {
-  background: radial-gradient(circle at 50% 0%, rgba(224, 242, 254, 0.45) 0%, rgba(244, 247, 251, 0.9) 70%, #F4F7FB 100%);
+  background: radial-gradient(circle at 50% 0%, rgba(219, 234, 254, 0.5) 0%, rgba(244, 247, 251, 0.9) 70%, #F4F7FB 100%);
 }
 
 .teal-divider-glow {
-  box-shadow: 0 0 10px rgba(15, 118, 110, 0.25);
+  box-shadow: 0 0 10px rgba(27, 44, 193, 0.25);
 }
 
 /* Lucide icons enter softly and respond when their control is interacted with. */
