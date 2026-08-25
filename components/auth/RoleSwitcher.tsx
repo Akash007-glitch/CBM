@@ -24,8 +24,8 @@ export const RoleSwitcher: React.FC<RoleSwitcherProps> = ({
         }`}
       >
         <div className="relative flex items-center justify-center">
-          <Shield className="w-4 h-4 stroke-[2]" />
-          <Lock className="w-2 h-2 absolute stroke-[3]" />
+          <Shield className="w-4 h-4 stroke-2" />
+          <Lock className="w-2 h-2 absolute stroke-3" />
         </div>
         <span>Admin</span>
       </button>
@@ -40,7 +40,7 @@ export const RoleSwitcher: React.FC<RoleSwitcherProps> = ({
             : "text-slate-500 hover:text-slate-700"
         }`}
       >
-        <IdCard className="w-4 h-4 stroke-[2]" />
+        <IdCard className="w-4 h-4 stroke-2" />
         <span>Salesman</span>
       </button>
     </div>

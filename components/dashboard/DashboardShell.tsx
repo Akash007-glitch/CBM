@@ -115,7 +115,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
       >
         {/* Sidebar Brand Header */}
         <div className="flex items-center gap-4 px-5 py-6 border-b border-white/10">
-          <div className="w-10 h-10 rounded-lg bg-[#1B2CC1] flex items-center justify-center text-white shadow-inner flex-shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-teal-brand flex items-center justify-center text-white shadow-inner shrink-0">
             <Package className="w-6 h-6" />
           </div>
           <div className="min-w-0 flex-1">
@@ -153,7 +153,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
                 `}
                 aria-current={isActive ? "page" : undefined}
               >
-                <span className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-white" : "text-[#BAC8FF]/70"}`}>
+                <span className={`w-5 h-5 shrink-0 ${isActive ? "text-white" : "text-[#BAC8FF]/70"}`}>
                   {item.icon}
                 </span>
                 <span className="flex-1">{item.label}</span>
@@ -171,7 +171,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
         <div className="p-4 border-t border-white/10 bg-black/10 space-y-3">
           <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-[#1B2CC1] text-white text-xs font-bold flex items-center justify-center flex-shrink-0 border border-white/20">
+              <div className="w-8 h-8 rounded-full bg-teal-brand text-white text-xs font-bold flex items-center justify-center shrink-0 border border-white/20">
                 {initials}
               </div>
               <div className="min-w-0 flex-1">
@@ -194,7 +194,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
       {/* ── Main Workspace Canvas ── */}
       <div data-component="DashboardShell/MainCanvas" className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* TopNavBar matching Stitch Specification */}
-        <header data-component="DashboardShell/TopNavBar" className="flex items-center justify-between gap-4 px-8 h-16 bg-white/80 backdrop-blur-md border-b border-[#E2E8F0] shadow-2xs flex-shrink-0">
+        <header data-component="DashboardShell/TopNavBar" className="flex items-center justify-between gap-4 px-8 h-16 bg-white/80 backdrop-blur-md border-b border-[#E2E8F0] shadow-2xs shrink-0">
           <div className="flex items-center gap-6 flex-1 max-w-md">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -205,7 +205,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
             </button>
 
             {/* Title */}
-            <span className="font-semibold text-lg text-[#1B2CC1] tracking-tight hidden sm:block">
+            <span className="font-semibold text-lg text-teal-brand tracking-tight hidden sm:block">
               Shubh Enterprise
             </span>
 
@@ -215,7 +215,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           {/* Right actions */}
           <div className="flex items-center gap-4">
             <button
-              className="text-[#3E4947] hover:text-[#1B2CC1] transition-colors p-2 rounded-full hover:bg-[#E5EEFF] cursor-pointer"
+              className="text-[#3E4947] hover:text-teal-brand transition-colors p-2 rounded-full hover:bg-[#E5EEFF] cursor-pointer"
               aria-label="Calendar"
             >
               <Calendar className="w-5 h-5" />
@@ -224,14 +224,14 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
             {/* Quick Add Button */}
             <button
               onClick={onOpenQuickAdd}
-              className="bg-[#1B2CC1] text-white px-4 h-10 rounded-lg text-sm font-semibold hover:bg-[#1B2CC1]/90 transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
+              className="bg-teal-brand text-white px-4 h-10 rounded-lg text-sm font-semibold hover:bg-teal-brand/90 transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Quick Add</span>
             </button>
 
             {/* User Avatar */}
-            <div className="w-8 h-8 rounded-full border border-[#BDC9C6] bg-[#1B2CC1] text-white text-xs font-bold flex items-center justify-center shadow-2xs ml-2">
+            <div className="w-8 h-8 rounded-full border border-[#BDC9C6] bg-teal-brand text-white text-xs font-bold flex items-center justify-center shadow-2xs ml-2">
               {initials}
             </div>
           </div>

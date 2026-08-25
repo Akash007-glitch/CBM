@@ -49,7 +49,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
         isOpen={activeModal === "forgot"}
         onClose={onClose}
         title="Reset Password"
-        icon={<KeyRound className="w-5 h-5 text-[#1B2CC1]" />}
+        icon={<KeyRound className="w-5 h-5 text-teal-brand" />}
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
@@ -64,7 +64,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
               type="email"
               value={resetEmail}
               onChange={(e) => setResetEmail(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-[#1B2CC1] focus:ring-2 focus:ring-[#1B2CC1]/15 transition-all"
+              className="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-teal-brand focus:ring-2 focus:ring-teal-brand/15 transition-all"
               placeholder="name@kinetic.ent"
               disabled={isSending}
             />
@@ -72,7 +72,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
           <button
             onClick={handleResetSubmit}
             disabled={isSending || !resetEmail.trim()}
-            className="w-full bg-[#1B2CC1] text-white font-semibold text-sm py-2.5 rounded-lg hover:bg-[#15239E] transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full bg-teal-brand text-white font-semibold text-sm py-2.5 rounded-lg hover:bg-teal-brand-dark transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {isSending ? (
               <>
@@ -91,7 +91,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
         isOpen={activeModal === "help"}
         onClose={onClose}
         title="Support & Assistance"
-        icon={<HelpCircle className="w-5 h-5 text-[#1B2CC1]" />}
+        icon={<HelpCircle className="w-5 h-5 text-teal-brand" />}
       >
         <div className="space-y-3 text-sm text-slate-600">
           <p>Need assistance signing into your Shubh Enterprise account?</p>
@@ -118,7 +118,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
         isOpen={activeModal === "security"}
         onClose={onClose}
         title="Security Architecture"
-        icon={<FileText className="w-5 h-5 text-[#1B2CC1]" />}
+        icon={<FileText className="w-5 h-5 text-teal-brand" />}
       >
         <div className="space-y-3 text-sm text-slate-600">
           <p>
@@ -128,7 +128,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
             {SECURITY_METRICS.map((metric) => (
               <div key={metric.label} className="flex justify-between font-medium">
                 <span>{metric.label}:</span>
-                <span className="text-[#1B2CC1]">{metric.value}</span>
+                <span className="text-teal-brand">{metric.value}</span>
               </div>
             ))}
           </div>

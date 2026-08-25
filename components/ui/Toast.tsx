@@ -40,7 +40,7 @@ export const Toast: React.FC<ToastProps> = ({
       data-component="Toast"
       role="alert"
       aria-live="assertive"
-      className={`fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:left-auto sm:right-5 sm:translate-x-0 sm:w-auto sm:max-w-sm z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl border text-sm animate-in fade-in slide-in-from-top-4 duration-300 ${styles.wrapper}`}
+      className={`fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:left-auto sm:right-5 sm:translate-x-0 sm:w-auto sm:max-w-sm z-9999 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl border text-sm animate-in fade-in slide-in-from-top-4 duration-300 ${styles.wrapper}`}
     >
       {styles.icon}
       <span className="font-medium">{message}</span>

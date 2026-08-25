@@ -287,8 +287,8 @@ export default function SalesmanDashboardPage() {
       <div className="min-h-screen bg-[#F8F9FE] font-sans text-slate-900 flex flex-col justify-between pb-20">
         {/* Toast Alert Banner */}
         {toastMessage && (
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-[#1B2CC1] text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 text-sm font-semibold animate-in fade-in zoom-in duration-200">
-            <CheckCircle2 className="w-5 h-5 text-blue-200 flex-shrink-0" />
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-teal-brand text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 text-sm font-semibold animate-in fade-in zoom-in duration-200">
+            <CheckCircle2 className="w-5 h-5 text-blue-200 shrink-0" />
             <span>{toastMessage}</span>
           </div>
         )}
@@ -304,7 +304,7 @@ export default function SalesmanDashboardPage() {
               <Menu className="w-6 h-6 text-slate-800" />
             </button>
 
-            <h1 className="text-lg font-bold text-[#1B2CC1] tracking-tight">Sales Portal</h1>
+            <h1 className="text-lg font-bold text-teal-brand tracking-tight">Sales Portal</h1>
 
             <div className="flex items-center gap-1">
               <button
@@ -346,7 +346,7 @@ export default function SalesmanDashboardPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search customers, phone, or location..."
-                  className="w-full h-11 pl-11 pr-4 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#1B2CC1] focus:ring-2 focus:ring-[#1B2CC1]/15 transition-all shadow-2xs"
+                  className="w-full h-11 pl-11 pr-4 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-teal-brand focus:ring-2 focus:ring-teal-brand/15 transition-all shadow-2xs"
                 />
                 {searchQuery && (
                   <button
@@ -361,7 +361,7 @@ export default function SalesmanDashboardPage() {
               {/* Section Header */}
               <div className="flex items-center justify-between pt-1">
                 <h2 className="text-base font-bold text-slate-900 tracking-tight">Customer Directory</h2>
-                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#EBF1FF] text-[#1B2CC1]">
+                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#EBF1FF] text-teal-brand">
                   {`${filteredCustomers.length} Total`}
                 </span>
               </div>
@@ -396,10 +396,10 @@ export default function SalesmanDashboardPage() {
                           className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${isOverdue
                             ? "bg-red-100/90 text-red-700"
                             : isCurrent
-                              ? "bg-blue-100/90 text-[#1B2CC1]"
+                              ? "bg-blue-100/90 text-teal-brand"
                               : isInactive
                                 ? "bg-slate-100 text-slate-600"
-                                : "bg-[#1B2CC1]/10 text-[#1B2CC1]"
+                                : "bg-teal-brand/10 text-teal-brand"
                             }`}
                         >
                           {statusLabel}
@@ -438,16 +438,16 @@ export default function SalesmanDashboardPage() {
                       <div className="flex items-center gap-2.5 mt-4">
                         <a
                           href={`tel:${cust.phone}`}
-                          className="flex-1 h-9 border border-slate-200 hover:border-[#1B2CC1]/40 rounded-xl text-xs font-bold text-[#1B2CC1] flex items-center justify-center gap-1.5 transition-colors cursor-pointer bg-white"
+                          className="flex-1 h-9 border border-slate-200 hover:border-teal-brand/40 rounded-xl text-xs font-bold text-teal-brand flex items-center justify-center gap-1.5 transition-colors cursor-pointer bg-white"
                         >
-                          <Phone className="w-3.5 h-3.5 text-[#1B2CC1]" />
+                          <Phone className="w-3.5 h-3.5 text-teal-brand" />
                           <span>Call</span>
                         </a>
 
                         <button
                           onClick={() => handleOpenCollection(cust)}
                           title={`Record Collection for ${cust.name}`}
-                          className="flex-1 h-9 bg-[#1B2CC1] hover:bg-[#1B2CC1]/90 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                          className="flex-1 h-9 bg-teal-brand hover:bg-teal-brand/90 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
                         >
                           <Banknote className="w-4 h-4 text-blue-200" />
                           <span>Collect</span>
@@ -483,7 +483,7 @@ export default function SalesmanDashboardPage() {
               <form onSubmit={handleInitiateConfirmation} className="p-4 space-y-4 flex-1 pb-24">
                 {/* Alert Top Banner */}
                 <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-100 text-blue-900 text-xs font-medium leading-relaxed flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#1B2CC1] shrink-0" />
+                  <ShieldCheck className="w-4 h-4 text-teal-brand shrink-0" />
                   <span>Verify collection details and click Confirm Collection below to open final review.</span>
                 </div>
 
@@ -554,7 +554,7 @@ export default function SalesmanDashboardPage() {
                     <button
                       type="button"
                       onClick={() => setApplyDiscount(!applyDiscount)}
-                      className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-200 cursor-pointer ${applyDiscount ? "bg-[#1B2CC1]" : "bg-slate-300"
+                      className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-200 cursor-pointer ${applyDiscount ? "bg-teal-brand" : "bg-slate-300"
                         }`}
                     >
                       <div
@@ -577,7 +577,7 @@ export default function SalesmanDashboardPage() {
                               type="number"
                               value={damageDeduction}
                               onChange={(e) => setDamageDeduction(e.target.value)}
-                              className="w-full h-9 pl-7 pr-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-[#1B2CC1]"
+                              className="w-full h-9 pl-7 pr-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-teal-brand"
                             />
                           </div>
                         </div>
@@ -592,7 +592,7 @@ export default function SalesmanDashboardPage() {
                               type="number"
                               value={specialDiscount}
                               onChange={(e) => setSpecialDiscount(e.target.value)}
-                              className="w-full h-9 pl-7 pr-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-[#1B2CC1]"
+                              className="w-full h-9 pl-7 pr-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-teal-brand"
                             />
                           </div>
                         </div>
@@ -624,7 +624,7 @@ export default function SalesmanDashboardPage() {
                   </div>
                   <div className="flex justify-between items-center pt-1 text-xs">
                     <span className="text-slate-500 font-semibold">New Balance</span>
-                    <span className="font-bold text-[#1B2CC1]">₹{newBalance.toFixed(2)}</span>
+                    <span className="font-bold text-teal-brand">₹{newBalance.toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -636,7 +636,7 @@ export default function SalesmanDashboardPage() {
 
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      { id: "Cash", label: "Cash", icon: <Banknote className="w-5 h-5 text-[#1B2CC1]" /> },
+                      { id: "Cash", label: "Cash", icon: <Banknote className="w-5 h-5 text-teal-brand" /> },
                       { id: "Cheque", label: "Cheque", icon: <FileText className="w-5 h-5 text-slate-600" /> },
                       { id: "Transfer", label: "Transfer", icon: <Landmark className="w-5 h-5 text-slate-600" /> },
                       { id: "Other", label: "Other", icon: <MoreHorizontal className="w-5 h-5 text-slate-600" /> },
@@ -648,12 +648,12 @@ export default function SalesmanDashboardPage() {
                           type="button"
                           onClick={() => setPaymentMethod(pm.id as "Cash" | "Cheque" | "Transfer" | "Other")}
                           className={`h-20 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${isSelected
-                            ? "border-[#1B2CC1] bg-blue-50/50 shadow-xs"
+                            ? "border-teal-brand bg-blue-50/50 shadow-xs"
                             : "border-slate-200 bg-white hover:bg-slate-50"
                             }`}
                         >
                           {pm.icon}
-                          <span className={`text-xs font-bold ${isSelected ? "text-[#1B2CC1]" : "text-slate-700"}`}>
+                          <span className={`text-xs font-bold ${isSelected ? "text-teal-brand" : "text-slate-700"}`}>
                             {pm.label}
                           </span>
                         </button>
@@ -670,7 +670,7 @@ export default function SalesmanDashboardPage() {
                     value={referenceNumber}
                     onChange={(e) => setReferenceNumber(e.target.value)}
                     placeholder="Receipt / UPI / Cheque #"
-                    className="w-full h-11 px-3.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder-slate-400 outline-none focus:border-[#1B2CC1] shadow-2xs"
+                    className="w-full h-11 px-3.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder-slate-400 outline-none focus:border-teal-brand shadow-2xs"
                   />
                 </div>
 
@@ -685,7 +685,7 @@ export default function SalesmanDashboardPage() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-[2] h-11 bg-[#1B2CC1] hover:bg-[#1B2CC1]/90 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                    className="flex-2 h-11 bg-teal-brand hover:bg-teal-brand/90 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
                   >
                     <ShieldCheck className="w-4 h-4 text-blue-200" />
                     <span>Confirm Collection ({collectedVal > 0 ? `₹${collectedVal.toLocaleString("en-IN")}` : "₹0"})</span>
@@ -721,7 +721,7 @@ export default function SalesmanDashboardPage() {
                         .toLocaleString("en-IN")}
                     </p>
                   </div>
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-[#1B2CC1]">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-teal-brand">
                     <TrendingUp className="w-5 h-5" />
                   </div>
                 </div>
@@ -748,7 +748,7 @@ export default function SalesmanDashboardPage() {
                   className="w-full p-3 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200 flex items-center justify-between text-xs font-bold text-slate-800 transition-colors cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#1B2CC1]" />
+                    <Users className="w-4 h-4 text-teal-brand" />
                     Browse Customer Directory
                   </span>
                   <ChevronRight className="w-4 h-4 text-slate-400" />
@@ -772,7 +772,7 @@ export default function SalesmanDashboardPage() {
                     const defaultCust = customers[0];
                     if (defaultCust) handleOpenCollection(defaultCust);
                   }}
-                  className="px-3 py-2 bg-[#1B2CC1] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  className="px-3 py-2 bg-teal-brand text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Record</span>
@@ -792,8 +792,8 @@ export default function SalesmanDashboardPage() {
                         <div>
                           <span className="text-slate-900 block font-bold text-sm">{customerName}</span>
                           <div className="flex items-center gap-1.5 mt-1">
-                            <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[#1B2CC1] text-[10px] font-bold flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3 text-[#1B2CC1]" />
+                            <span className="px-2 py-0.5 rounded-md bg-blue-50 text-teal-brand text-[10px] font-bold flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-teal-brand" />
                               Confirmed
                             </span>
                             <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-semibold capitalize">
@@ -801,7 +801,7 @@ export default function SalesmanDashboardPage() {
                             </span>
                           </div>
                         </div>
-                        <span className="text-[#1B2CC1] font-black text-sm">₹{Number(col.amount).toLocaleString("en-IN")}</span>
+                        <span className="text-teal-brand font-black text-sm">₹{Number(col.amount).toLocaleString("en-IN")}</span>
                       </div>
 
                       <div className="flex justify-between items-center text-[11px] text-slate-500 pt-2 border-t border-slate-100">
@@ -841,7 +841,7 @@ export default function SalesmanDashboardPage() {
                     value={newCompanyName}
                     onChange={(e) => setNewCompanyName(e.target.value)}
                     placeholder="e.g. Acme Corp"
-                    className="w-full h-10 px-3 border border-slate-200 rounded-xl font-medium outline-none focus:border-[#1B2CC1]"
+                    className="w-full h-10 px-3 border border-slate-200 rounded-xl font-medium outline-none focus:border-teal-brand"
                   />
                 </div>
 
@@ -852,7 +852,7 @@ export default function SalesmanDashboardPage() {
                     value={newCity}
                     onChange={(e) => setNewCity(e.target.value)}
                     placeholder="e.g. Mumbai"
-                    className="w-full h-10 px-3 border border-slate-200 rounded-xl font-medium outline-none focus:border-[#1B2CC1]"
+                    className="w-full h-10 px-3 border border-slate-200 rounded-xl font-medium outline-none focus:border-teal-brand"
                   />
                 </div>
 
@@ -863,7 +863,7 @@ export default function SalesmanDashboardPage() {
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value)}
                     placeholder="+91 98000 00000"
-                    className="w-full h-10 px-3 border border-slate-200 rounded-xl font-medium outline-none focus:border-[#1B2CC1]"
+                    className="w-full h-10 px-3 border border-slate-200 rounded-xl font-medium outline-none focus:border-teal-brand"
                   />
                 </div>
 
@@ -877,7 +877,7 @@ export default function SalesmanDashboardPage() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 h-10 bg-[#1B2CC1] text-white rounded-xl font-bold hover:bg-[#1B2CC1]/90 shadow-xs"
+                    className="flex-1 h-10 bg-teal-brand text-white rounded-xl font-bold hover:bg-teal-brand/90 shadow-xs"
                   >
                     Create
                   </button>
@@ -894,7 +894,7 @@ export default function SalesmanDashboardPage() {
               {/* Header */}
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center text-[#1B2CC1]">
+                  <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center text-teal-brand">
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <div>
@@ -945,7 +945,7 @@ export default function SalesmanDashboardPage() {
 
                 <div className="pt-2 border-t border-slate-200 flex justify-between items-center">
                   <span className="font-bold text-slate-900">Amount Collected</span>
-                  <span className="text-base font-black text-[#1B2CC1]">₹{collectedVal.toFixed(2)}</span>
+                  <span className="text-base font-black text-teal-brand">₹{collectedVal.toFixed(2)}</span>
                 </div>
 
                 <div className="flex justify-between items-center text-[11px]">
@@ -971,9 +971,9 @@ export default function SalesmanDashboardPage() {
                 <button
                   type="button"
                   onClick={handleFinalizeCollection}
-                  className="flex-[1.5] h-11 bg-[#1B2CC1] text-white rounded-xl text-xs font-bold hover:bg-[#1B2CC1]/90 shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                  className="flex-[1.5] h-11 bg-teal-brand text-white rounded-xl text-xs font-bold hover:bg-teal-brand/90 shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                 >
-                  <Check className="w-4 h-4 text-white stroke-[3]" />
+                  <Check className="w-4 h-4 text-white stroke-3" />
                   <span>Confirm & Submit</span>
                 </button>
               </div>
@@ -985,7 +985,7 @@ export default function SalesmanDashboardPage() {
         {receiptData && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
             <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden border border-slate-200 p-5 space-y-4 text-center">
-              <div className="w-12 h-12 rounded-full bg-blue-100 text-[#1B2CC1] mx-auto flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-blue-100 text-teal-brand mx-auto flex items-center justify-center">
                 <FileCheck className="w-6 h-6" />
               </div>
 
@@ -1001,7 +1001,7 @@ export default function SalesmanDashboardPage() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500 font-semibold">Amount Paid:</span>
-                  <span className="font-extrabold text-[#1B2CC1] text-sm">
+                  <span className="font-extrabold text-teal-brand text-sm">
                     ₹{receiptData.amount.toLocaleString("en-IN")}
                   </span>
                 </div>
@@ -1041,7 +1041,7 @@ export default function SalesmanDashboardPage() {
                     setReceiptData(null);
                     setActiveTab("collections");
                   }}
-                  className="flex-1 h-10 bg-[#1B2CC1] text-white rounded-xl text-xs font-bold hover:bg-[#1B2CC1]/90 shadow-xs"
+                  className="flex-1 h-10 bg-teal-brand text-white rounded-xl text-xs font-bold hover:bg-teal-brand/90 shadow-xs"
                 >
                   View Collections
                 </button>
@@ -1056,7 +1056,7 @@ export default function SalesmanDashboardPage() {
             {/* Home Tab */}
             <button
               onClick={() => setActiveTab("home")}
-              className={`flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${activeTab === "home" ? "text-[#1B2CC1]" : "text-slate-400 hover:text-slate-600"
+              className={`flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${activeTab === "home" ? "text-teal-brand" : "text-slate-400 hover:text-slate-600"
                 }`}
             >
               <Home className="w-5 h-5" />
@@ -1067,7 +1067,7 @@ export default function SalesmanDashboardPage() {
             <button
               onClick={() => setActiveTab("customers")}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full cursor-pointer transition-all ${activeTab === "customers"
-                ? "bg-[#1B2CC1]/10 text-[#1B2CC1]"
+                ? "bg-teal-brand/10 text-teal-brand"
                 : "text-slate-400 hover:text-slate-600"
                 }`}
             >
@@ -1079,7 +1079,7 @@ export default function SalesmanDashboardPage() {
             <button
               onClick={() => setActiveTab("collections")}
               className={`flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${activeTab === "collections"
-                ? "text-[#1B2CC1]"
+                ? "text-teal-brand"
                 : "text-slate-400 hover:text-slate-600"
                 }`}
             >

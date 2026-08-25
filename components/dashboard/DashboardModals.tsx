@@ -113,58 +113,58 @@ export const AddCustomerModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
 
           {/* BASIC INFORMATION */}
           <section className="flex flex-col gap-3">
-            <h3 className="text-xs font-bold text-[#1B2CC1] uppercase tracking-widest">BASIC INFORMATION</h3>
+            <h3 className="text-xs font-bold text-teal-brand uppercase tracking-widest">BASIC INFORMATION</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-[#3E4947]">Company Name *</label>
                 <input type="text" required value={companyName} onChange={(e) => setCompanyName(e.target.value)}
                   placeholder="e.g. Acme Corp"
-                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium" />
+                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-teal-brand focus:ring-1 focus:ring-teal-brand text-[#0B1C30] outline-none font-medium" />
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-[#3E4947]">Contact Person</label>
                 <input type="text" value={contactPerson} onChange={(e) => setContactPerson(e.target.value)}
                   placeholder="Full Name"
-                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium" />
+                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-teal-brand focus:ring-1 focus:ring-teal-brand text-[#0B1C30] outline-none font-medium" />
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-[#3E4947]">Phone</label>
                 <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 000-0000"
-                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium" />
+                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-teal-brand focus:ring-1 focus:ring-teal-brand text-[#0B1C30] outline-none font-medium" />
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-[#3E4947]">Email</label>
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="billing@company.com"
-                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium" />
+                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-teal-brand focus:ring-1 focus:ring-teal-brand text-[#0B1C30] outline-none font-medium" />
               </div>
             </div>
           </section>
 
           {/* ADDRESS */}
           <section className="flex flex-col gap-3">
-            <h3 className="text-xs font-bold text-[#1B2CC1] uppercase tracking-widest">ADDRESS</h3>
+            <h3 className="text-xs font-bold text-teal-brand uppercase tracking-widest">ADDRESS</h3>
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-[#3E4947]">Street Address</label>
                 <input type="text" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)}
                   placeholder="123 Business Way"
-                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium" />
+                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-teal-brand focus:ring-1 focus:ring-teal-brand text-[#0B1C30] outline-none font-medium" />
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-[#3E4947]">City</label>
                   <input type="text" value={city} onChange={(e) => setCity(e.target.value)}
-                    className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium" />
+                    className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-teal-brand focus:ring-1 focus:ring-teal-brand text-[#0B1C30] outline-none font-medium" />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-[#3E4947]">State</label>
                   <input type="text" value={state} onChange={(e) => setState(e.target.value)}
-                    className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium" />
+                    className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-teal-brand focus:ring-1 focus:ring-teal-brand text-[#0B1C30] outline-none font-medium" />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-[#3E4947]">ZIP/Pincode</label>
                   <input type="text" value={zip} onChange={(e) => setZip(e.target.value)}
-                    className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium" />
+                    className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-teal-brand focus:ring-1 focus:ring-teal-brand text-[#0B1C30] outline-none font-medium" />
                 </div>
               </div>
             </div>
@@ -173,11 +173,11 @@ export const AddCustomerModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
           {/* ASSIGNMENT & FINANCIALS */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col gap-3">
-              <h3 className="text-xs font-bold text-[#1B2CC1] uppercase tracking-widest">ASSIGNMENT</h3>
+              <h3 className="text-xs font-bold text-teal-brand uppercase tracking-widest">ASSIGNMENT</h3>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-[#3E4947]">Assigned Salesman</label>
                 <select value={assignedSalesman} onChange={(e) => setAssignedSalesman(e.target.value)}
-                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium appearance-none cursor-pointer">
+                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-teal-brand focus:ring-1 focus:ring-teal-brand text-[#0B1C30] outline-none font-medium appearance-none cursor-pointer">
                   <option value="">Select Salesman</option>
                   {salesmen.map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
@@ -186,18 +186,18 @@ export const AddCustomerModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <h3 className="text-xs font-bold text-[#1B2CC1] uppercase tracking-widest">FINANCIALS</h3>
+              <h3 className="text-xs font-bold text-teal-brand uppercase tracking-widest">FINANCIALS</h3>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-[#3E4947]">Credit Limit (₹)</label>
                 <input type="number" value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)}
                   placeholder="₹ 0.00"
-                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium font-mono" />
+                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-teal-brand focus:ring-1 focus:ring-teal-brand text-[#0B1C30] outline-none font-medium font-mono" />
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-[#3E4947]">Opening Balance (₹)</label>
                 <input type="number" value={openingBalance} onChange={(e) => setOpeningBalance(e.target.value)}
                   placeholder="₹ 0.00"
-                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-[#0B1C30] outline-none font-medium font-mono" />
+                  className="h-10 px-3 rounded-lg border border-[#BDC9C6] bg-[#EFF4FF]/50 focus:border-teal-brand focus:ring-1 focus:ring-teal-brand text-[#0B1C30] outline-none font-medium font-mono" />
               </div>
             </div>
           </section>
@@ -210,7 +210,7 @@ export const AddCustomerModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
             Cancel
           </button>
           <button type="submit" form="add-customer-form"
-            className="h-10 px-6 rounded-lg bg-[#1B2CC1] text-white font-semibold text-sm hover:bg-[#1B2CC1]/90 transition-opacity shadow-xs cursor-pointer">
+            className="h-10 px-6 rounded-lg bg-teal-brand text-white font-semibold text-sm hover:bg-teal-brand/90 transition-opacity shadow-xs cursor-pointer">
             Create Customer
           </button>
         </div>
@@ -286,11 +286,11 @@ export const CustomersView: React.FC<{ onOpenAddCustomer: () => void }> = ({ onO
   };
 
   return (
-    <div data-component="CustomersView" className="space-y-6 max-w-[1440px] mx-auto">
+    <div data-component="CustomersView" className="space-y-6 max-w-360 mx-auto">
       {/* Toast Notification */}
       {toastMsg && (
         <div className="fixed top-4 right-4 z-50 bg-emerald-700 text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 text-sm font-semibold animate-in fade-in slide-in-from-top-2 duration-200">
-          <CheckCircle2 className="w-5 h-5 text-emerald-200 flex-shrink-0" />
+          <CheckCircle2 className="w-5 h-5 text-emerald-200 shrink-0" />
           <span>{toastMsg}</span>
         </div>
       )}
@@ -301,7 +301,7 @@ export const CustomersView: React.FC<{ onOpenAddCustomer: () => void }> = ({ onO
           <p className="text-sm text-[#3E4947]">Real-time balances &amp; purchase histories</p>
         </div>
         <button onClick={onOpenAddCustomer}
-          className="flex items-center gap-2 px-4 py-2 bg-[#1B2CC1] text-white text-sm font-semibold rounded-lg shadow-xs hover:bg-[#1B2CC1]/90 cursor-pointer">
+          className="flex items-center gap-2 px-4 py-2 bg-teal-brand text-white text-sm font-semibold rounded-lg shadow-xs hover:bg-teal-brand/90 cursor-pointer">
           <Plus className="w-4 h-4" /> New Customer
         </button>
       </div>
@@ -333,7 +333,7 @@ export const CustomersView: React.FC<{ onOpenAddCustomer: () => void }> = ({ onO
                   ₹{Number(c.opening_balance).toLocaleString("en-IN")}
                 </td>
                 <td className="p-4">
-                  <span className={`px-2.5 py-1 rounded text-xs font-bold ${c.is_active ? "bg-[#1B2CC1]/10 text-[#1B2CC1]" : "bg-gray-100 text-gray-500"}`}>
+                  <span className={`px-2.5 py-1 rounded text-xs font-bold ${c.is_active ? "bg-teal-brand/10 text-teal-brand" : "bg-gray-100 text-gray-500"}`}>
                     {c.is_active ? "Active" : "Inactive"}
                   </span>
                 </td>
@@ -371,7 +371,7 @@ export const CustomersView: React.FC<{ onOpenAddCustomer: () => void }> = ({ onO
           <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-[#E2E8F0] p-6 space-y-5 animate-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="flex items-start gap-4">
-              <div className="w-11 h-11 rounded-xl bg-red-100 flex items-center justify-center text-red-600 flex-shrink-0">
+              <div className="w-11 h-11 rounded-xl bg-red-100 flex items-center justify-center text-red-600 shrink-0">
                 <Trash2 className="w-6 h-6" />
               </div>
               <div className="flex-1 min-w-0">
@@ -396,7 +396,7 @@ export const CustomersView: React.FC<{ onOpenAddCustomer: () => void }> = ({ onO
             {deleteError && (
               <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-2">
                 <div className="flex items-center gap-2 font-bold text-amber-800">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>Notice</span>
                 </div>
                 <p>{deleteError}</p>
@@ -475,7 +475,7 @@ export const SalesmenView: React.FC = () => {
   const salesmen = useDashboardStore((s) => s.salesmen);
 
   return (
-    <div data-component="SalesmenView" className="space-y-6 max-w-[1440px] mx-auto">
+    <div data-component="SalesmenView" className="space-y-6 max-w-360 mx-auto">
       <div>
         <h2 className="text-2xl font-bold text-[#0B1C30]">Sales Force</h2>
         <p className="text-sm text-[#3E4947] font-medium">Team directory</p>
@@ -486,7 +486,7 @@ export const SalesmenView: React.FC = () => {
           const initials = s.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
           return (
             <div key={s.id} className="bg-white p-6 rounded-[14px] border border-[#E2E8F0] shadow-xs flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#1B2CC1] text-white text-base font-bold flex items-center justify-center">
+              <div className="w-12 h-12 rounded-xl bg-teal-brand text-white text-base font-bold flex items-center justify-center">
                 {initials}
               </div>
               <div className="flex-1 min-w-0">
@@ -494,7 +494,7 @@ export const SalesmenView: React.FC = () => {
                 <p className="text-xs text-[#6E7977]">{s.email ?? s.profiles?.email}</p>
                 <div className="flex items-center gap-4 mt-2 text-xs font-semibold text-[#3E4947]">
                   {s.employee_code && <span>Code: {s.employee_code}</span>}
-                  <span className={s.is_active ? "text-[#1B2CC1]" : "text-gray-400"}>
+                  <span className={s.is_active ? "text-teal-brand" : "text-gray-400"}>
                     {s.is_active ? "Active" : "Inactive"}
                   </span>
                 </div>
@@ -512,14 +512,14 @@ export const CollectionsView: React.FC<{ onOpenQuickAdd: () => void }> = ({ onOp
   const customers = useDashboardStore((s) => s.customers);
 
   return (
-    <div data-component="CollectionsView" className="space-y-6 max-w-[1440px] mx-auto">
+    <div data-component="CollectionsView" className="space-y-6 max-w-360 mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-[#0B1C30]">Collections Log</h2>
           <p className="text-sm text-[#3E4947]">Real-time log of payments received</p>
         </div>
         <button onClick={onOpenQuickAdd}
-          className="px-4 py-2 bg-[#1B2CC1] text-white text-sm font-semibold rounded-lg shadow-xs hover:bg-[#1B2CC1]/90 cursor-pointer">
+          className="px-4 py-2 bg-teal-brand text-white text-sm font-semibold rounded-lg shadow-xs hover:bg-teal-brand/90 cursor-pointer">
           + Log Payment
         </button>
       </div>
@@ -546,7 +546,7 @@ export const CollectionsView: React.FC<{ onOpenQuickAdd: () => void }> = ({ onOp
                 <tr key={p.id} className="hover:bg-[#F8F9FF]">
                   <td className="p-4 font-mono font-semibold text-[#3E4947]">{p.payment_number ?? p.id.slice(0, 8)}</td>
                   <td className="p-4 font-bold text-[#0B1C30]">{custName}</td>
-                  <td className="p-4 font-bold text-[#1B2CC1]">₹{Number(p.amount).toLocaleString("en-IN")}</td>
+                  <td className="p-4 font-bold text-teal-brand">₹{Number(p.amount).toLocaleString("en-IN")}</td>
                   <td className="p-4 text-[#3E4947] capitalize">{p.payment_method.replace("_", " ")}</td>
                   <td className="p-4 text-[#3E4947]">{new Date(p.payment_date).toLocaleDateString("en-IN")}</td>
                 </tr>
@@ -572,7 +572,7 @@ export const OutstandingView: React.FC = () => {
   const customers = useDashboardStore((s) => s.customers);
 
   return (
-    <div data-component="OutstandingView" className="space-y-6 max-w-[1440px] mx-auto">
+    <div data-component="OutstandingView" className="space-y-6 max-w-360 mx-auto">
       <div>
         <h2 className="text-2xl font-bold text-[#0B1C30]">Outstanding Invoices</h2>
         <p className="text-sm text-[#3E4947]">Unpaid pending client accounts</p>

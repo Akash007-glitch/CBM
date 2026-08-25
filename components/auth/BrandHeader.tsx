@@ -6,9 +6,9 @@ export const BrandHeader: React.FC = () => {
     <div data-component="BrandHeader" className="w-full text-center flex flex-col items-center mb-5">
       <div className="flex items-center justify-center gap-2.5 mb-1.5">
         {/* Custom Shield Emblem Icon */}
-        <div className="relative w-8 h-8 rounded-lg bg-[#1B2CC1] text-white flex items-center justify-center shadow-xs">
-          <Shield className="w-5 h-5 fill-[#1B2CC1] stroke-white stroke-[2.2]" />
-          <Lock className="w-2.5 h-2.5 text-white absolute center stroke-[3]" />
+        <div className="relative w-8 h-8 rounded-lg bg-teal-brand text-white flex items-center justify-center shadow-xs">
+          <Shield className="w-5 h-5 fill-teal-brand stroke-white stroke-[2.2]" />
+          <Lock className="w-2.5 h-2.5 text-white absolute center stroke-3" />
         </div>
         <h1 className="text-[26px] font-bold text-slate-900 tracking-tight font-sans">
           Shubh Enterprise
@@ -20,7 +20,7 @@ export const BrandHeader: React.FC = () => {
       </p>
 
       {/* Accent Blue Divider Line */}
-      <div className="w-full h-[3.5px] bg-[#1B2CC1] rounded-full mt-5 mb-6 opacity-95 teal-divider-glow" />
+      <div className="w-full h-[3.5px] bg-teal-brand rounded-full mt-5 mb-6 opacity-95 teal-divider-glow" />
     </div>
   );
 };

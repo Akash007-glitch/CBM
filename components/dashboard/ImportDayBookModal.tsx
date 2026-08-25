@@ -193,7 +193,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
         if (e.target === e.currentTarget && !isProcessing) onClose();
       }}
     >
-      <div className="bg-white w-full max-w-[860px] rounded-2xl shadow-2xl overflow-hidden border border-[#E2E8F0] animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[94vh]">
+      <div className="bg-white w-full max-w-215 rounded-2xl shadow-2xl overflow-hidden border border-[#E2E8F0] animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[94vh]">
         {/* Header */}
         <div className="px-6 pt-5 pb-4 flex items-center justify-between border-b border-[#E2E8F0] bg-[#F8F9FF]">
           <div>
@@ -219,7 +219,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
           {/* Error Banner */}
           {parseError && (
             <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs font-semibold flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
               <span className="flex-1">{parseError}</span>
               <button
                 onClick={() => setParseError(null)}
@@ -255,7 +255,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#6E7977] block">
                     Transactions
                   </span>
-                  <span className="text-xl font-bold text-[#1B2CC1] mt-1 block">
+                  <span className="text-xl font-bold text-teal-brand mt-1 block">
                     {importResult.successfulRows.toLocaleString("en-IN")}
                   </span>
                 </div>
@@ -344,10 +344,10 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                 onClick={() => fileInputRef.current?.click()}
                 className={`border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 group ${
                   isDragging
-                    ? "border-[#1B2CC1] bg-[#EFF4FF]"
+                    ? "border-teal-brand bg-[#EFF4FF]"
                     : selectedFile
-                    ? "border-[#1B2CC1]/60 bg-[#F8F9FF]"
-                    : "border-[#C8D3E8] bg-[#F8F9FF]/60 hover:bg-[#EFF4FF] hover:border-[#1B2CC1]/50"
+                    ? "border-teal-brand/60 bg-[#F8F9FF]"
+                    : "border-[#C8D3E8] bg-[#F8F9FF]/60 hover:bg-[#EFF4FF] hover:border-teal-brand/50"
                 }`}
               >
                 <input
@@ -358,7 +358,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                   className="hidden"
                 />
 
-                <div className="w-11 h-11 rounded-full bg-[#E5EEFF] flex items-center justify-center text-[#1B2CC1] mb-2 group-hover:scale-105 transition-transform shadow-xs">
+                <div className="w-11 h-11 rounded-full bg-[#E5EEFF] flex items-center justify-center text-teal-brand mb-2 group-hover:scale-105 transition-transform shadow-xs">
                   {isParsing ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
@@ -368,7 +368,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
 
                 {selectedFile ? (
                   <div className="space-y-0.5">
-                    <p className="text-sm font-bold text-[#1B2CC1] flex items-center justify-center gap-1.5">
+                    <p className="text-sm font-bold text-teal-brand flex items-center justify-center gap-1.5">
                       <FileSpreadsheet className="w-4 h-4" />
                       {selectedFile.name}
                     </p>
@@ -416,7 +416,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                       <select
                         value={targetAccount}
                         onChange={(e) => setTargetAccount(e.target.value)}
-                        className="w-full h-10 pl-3 pr-9 border border-[#CBD5E1] rounded-lg bg-white focus:border-[#1B2CC1] focus:ring-1 focus:ring-[#1B2CC1] text-xs font-medium text-[#0B1C30] outline-none appearance-none cursor-pointer"
+                        className="w-full h-10 pl-3 pr-9 border border-[#CBD5E1] rounded-lg bg-white focus:border-teal-brand focus:ring-1 focus:ring-teal-brand text-xs font-medium text-[#0B1C30] outline-none appearance-none cursor-pointer"
                       >
                         <option value="day_book">Day Book / Cash Account</option>
                         <option value="bank_hdfc">HDFC Bank Account - 4920</option>
@@ -432,8 +432,8 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                     <button
                       type="button"
                       onClick={() => setCheckDuplicates(!checkDuplicates)}
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        checkDuplicates ? "bg-[#1B2CC1]" : "bg-[#CBD5E1]"
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        checkDuplicates ? "bg-teal-brand" : "bg-[#CBD5E1]"
                       }`}
                     >
                       <span
@@ -500,7 +500,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                           onClick={() => setActivePreviewTab("rows")}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
                             activePreviewTab === "rows"
-                              ? "bg-[#1B2CC1] text-white"
+                              ? "bg-teal-brand text-white"
                               : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                           }`}
                         >
@@ -512,7 +512,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                           onClick={() => setActivePreviewTab("mapping")}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
                             activePreviewTab === "mapping"
-                              ? "bg-[#1B2CC1] text-white"
+                              ? "bg-teal-brand text-white"
                               : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                           }`}
                         >
@@ -525,7 +525,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                         <button
                           type="button"
                           onClick={() => setIsEditingMapping(!isEditingMapping)}
-                          className="text-xs font-semibold text-[#1B2CC1] hover:underline cursor-pointer"
+                          className="text-xs font-semibold text-teal-brand hover:underline cursor-pointer"
                         >
                           {isEditingMapping ? "Done Editing" : "Edit Mappings"}
                         </button>
@@ -554,7 +554,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                                   <td className="py-2.5 px-3 font-mono font-medium text-[#0B1C30]">
                                     {row.voucherRef || `Row ${row.rowNumber}`}
                                   </td>
-                                  <td className="py-2.5 px-3 font-medium text-[#0B1C30] max-w-[140px] truncate">
+                                  <td className="py-2.5 px-3 font-medium text-[#0B1C30] max-w-35 truncate">
                                     {row.customerName}
                                   </td>
                                   <td className="py-2.5 px-3 text-right font-medium text-emerald-700">
@@ -571,7 +571,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                                   </td>
                                   <td className="py-2.5 px-3 text-center">
                                     {row.isValid ? (
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
                                         <Check className="w-3 h-3" /> Valid
                                       </span>
                                     ) : !row.isBalanceMatched ? (
@@ -630,7 +630,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                                             e.target.value as ERPField | "ignore"
                                           )
                                         }
-                                        className="h-8 px-2 border border-[#CBD5E1] rounded-md text-xs font-medium text-[#0B1C30] focus:border-[#1B2CC1] outline-none bg-white"
+                                        className="h-8 px-2 border border-[#CBD5E1] rounded-md text-xs font-medium text-[#0B1C30] focus:border-teal-brand outline-none bg-white"
                                       >
                                         <option value="ignore">— Ignore Column —</option>
                                         {ERP_FIELD_DEFINITIONS.map((def) => (
@@ -644,14 +644,14 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                                         className={`font-semibold ${
                                           item.erpField === "ignore"
                                             ? "text-gray-400 italic"
-                                            : "text-[#1B2CC1]"
+                                            : "text-teal-brand"
                                         }`}
                                       >
                                         {matchedDef ? matchedDef.label : "Ignored"}
                                       </span>
                                     )}
                                   </td>
-                                  <td className="py-3 px-4 text-right font-medium text-[#4A5568] max-w-[160px] truncate">
+                                  <td className="py-3 px-4 text-right font-medium text-[#4A5568] max-w-40 truncate">
                                     {item.sampleData || "—"}
                                   </td>
                                 </tr>
@@ -675,7 +675,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
               <button
                 type="button"
                 onClick={handleReset}
-                className="text-xs font-semibold text-[#1B2CC1] hover:underline flex items-center gap-1.5 cursor-pointer"
+                className="text-xs font-semibold text-teal-brand hover:underline flex items-center gap-1.5 cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Import Another File</span>
@@ -698,7 +698,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                 type="button"
                 disabled={!selectedFile || isProcessing || isParsing || (parseResult?.validCount === 0)}
                 onClick={handleProcessImport}
-                className="px-5 py-2.5 bg-[#1B2CC1] hover:bg-[#15239E] disabled:opacity-50 text-white text-sm font-semibold rounded-lg shadow-xs flex items-center gap-2 transition-all cursor-pointer"
+                className="px-5 py-2.5 bg-teal-brand hover:bg-teal-brand-dark disabled:opacity-50 text-white text-sm font-semibold rounded-lg shadow-xs flex items-center gap-2 transition-all cursor-pointer"
               >
                 {isProcessing ? (
                   <>

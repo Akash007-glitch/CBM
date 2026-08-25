@@ -99,7 +99,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
     : "M 0,160 L 500,160 L 500,175 L 0,175 Z";
 
   return (
-    <div data-component="ERPAdminDashboard" className="max-w-[1440px] mx-auto space-y-8">
+    <div data-component="ERPAdminDashboard" className="max-w-360 mx-auto space-y-8">
       {/* Header Section matching Stitch Specification */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
@@ -115,9 +115,9 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
           {/* Add Customer Button */}
           <button
             onClick={onOpenAddCustomer}
-            className="bg-white border border-[#BDC9C6] text-[#1B2CC1] px-4 h-10 rounded-lg text-sm font-semibold hover:bg-[#F8F9FF] transition-colors shadow-2xs flex items-center gap-2 cursor-pointer"
+            className="bg-white border border-[#BDC9C6] text-teal-brand px-4 h-10 rounded-lg text-sm font-semibold hover:bg-[#F8F9FF] transition-colors shadow-2xs flex items-center gap-2 cursor-pointer"
           >
-            <Plus className="w-4 h-4 text-[#1B2CC1]" />
+            <Plus className="w-4 h-4 text-teal-brand" />
             <span>Add Customer</span>
           </button>
         </div>
@@ -127,13 +127,13 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
         {/* Card 1: Today's Sales */}
         <div className="bg-white border border-[#E2E8F0] rounded-[14px] p-6 shadow-xs xl:col-span-2 flex flex-col justify-between relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#1B2CC1]/5 rounded-full blur-xl group-hover:bg-[#1B2CC1]/10 transition-colors pointer-events-none" />
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-teal-brand/5 rounded-full blur-xl group-hover:bg-teal-brand/10 transition-colors pointer-events-none" />
           <div>
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-[#3E4947] uppercase tracking-wider">
                 Today&apos;s Sales
               </span>
-              <div className="p-1.5 rounded-md bg-[#E5EEFF] text-[#1B2CC1] flex items-center justify-center">
+              <div className="p-1.5 rounded-md bg-[#E5EEFF] text-teal-brand flex items-center justify-center">
                 <TrendingUp className="w-5 h-5" />
               </div>
             </div>
@@ -141,7 +141,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
               {formatINR(todaySales)}
             </div>
           </div>
-          <div className="flex items-center gap-1.5 mt-4 text-xs font-medium text-[#1B2CC1]">
+          <div className="flex items-center gap-1.5 mt-4 text-xs font-medium text-teal-brand">
             <span>Live daily invoice total</span>
           </div>
         </div>
@@ -168,7 +168,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
         </div>
 
         {/* Card 3: Total Outstanding */}
-        <div className="bg-white border border-[#BA1A1A]/30 bg-[#FFDAD6]/10 rounded-[14px] p-6 shadow-xs xl:col-span-2 flex flex-col justify-between relative overflow-hidden group">
+        <div className="border border-[#BA1A1A]/30 bg-[#FFDAD6]/10 rounded-[14px] p-6 shadow-xs xl:col-span-2 flex flex-col justify-between relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#BA1A1A]/5 rounded-full blur-xl group-hover:bg-[#BA1A1A]/10 transition-colors pointer-events-none" />
           <div>
             <div className="flex justify-between items-start">
@@ -234,7 +234,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
                 <select
                   value={trendPeriod}
                   onChange={(e) => setTrendPeriod(e.target.value)}
-                  className="bg-[#EFF4FF] border border-[#BDC9C6] rounded-md text-sm text-[#0B1C30] px-3 py-1.5 pr-8 focus:outline-none focus:border-[#1B2CC1] font-medium appearance-none cursor-pointer"
+                  className="bg-[#EFF4FF] border border-[#BDC9C6] rounded-md text-sm text-[#0B1C30] px-3 py-1.5 pr-8 focus:outline-none focus:border-teal-brand font-medium appearance-none cursor-pointer"
                 >
                   <option>Last 30 Days</option>
                 </select>
@@ -243,7 +243,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
             </div>
 
             {/* Responsive Line Chart Visualization */}
-            <div className="h-[250px] w-full rounded-lg border border-[#E2E8F0] p-4 flex flex-col justify-between relative bg-repeating-linear-45 from-[#F8F9FF] to-[#FFFFFF]">
+            <div className="h-62.5 w-full rounded-lg border border-[#E2E8F0] p-4 flex flex-col justify-between relative bg-repeating-linear-45 from-[#F8F9FF] to-[#FFFFFF]">
               <svg className="w-full h-full overflow-visible" viewBox="0 0 500 180" preserveAspectRatio="none">
                 <line x1="0" y1="30" x2="500" y2="30" stroke="#E2E8F0" strokeDasharray="4 4" strokeWidth="1" />
                 <line x1="0" y1="80" x2="500" y2="80" stroke="#E2E8F0" strokeDasharray="4 4" strokeWidth="1" />
@@ -300,7 +300,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
                 icon = <AlertTriangle className="w-4 h-4 text-[#BA1A1A]" />;
                 iconBg = "bg-[#FFDAD6]/30";
               } else if (!isPayment) {
-                icon = <FileText className="w-4 h-4 text-[#1B2CC1]" />;
+                icon = <FileText className="w-4 h-4 text-teal-brand" />;
                 iconBg = "bg-[#E5EEFF]";
               }
 
@@ -327,7 +327,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
 
           <button
             // onClick={}
-            className="w-full mt-6 py-2.5 border border-[#E2E8F0] rounded-lg text-[#1B2CC1] font-semibold text-sm hover:bg-[#F8F9FF] transition-colors cursor-pointer"
+            className="w-full mt-6 py-2.5 border border-[#E2E8F0] rounded-lg text-teal-brand font-semibold text-sm hover:bg-[#F8F9FF] transition-colors cursor-pointer"
           >
             View All Activity
           </button>

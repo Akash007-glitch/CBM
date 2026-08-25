@@ -28,7 +28,7 @@ export const EmailInput: React.FC<EmailInputProps> = ({
       </label>
       <div className="relative flex items-center">
         <Mail
-          className={`w-4 h-4 absolute left-3.5 pointer-events-none stroke-[2] transition-colors ${hasError ? "text-red-400" : "text-slate-400"
+          className={`w-4 h-4 absolute left-3.5 pointer-events-none stroke-2 transition-colors ${hasError ? "text-red-400" : "text-slate-400"
             }`}
         />
         <input
@@ -43,7 +43,7 @@ export const EmailInput: React.FC<EmailInputProps> = ({
           aria-describedby={hasError ? "email-error" : undefined}
           className={`w-full pl-10 pr-4 py-2.5 text-slate-800 bg-white border rounded-lg text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all shadow-2xs font-normal disabled:opacity-60 disabled:cursor-not-allowed ${hasError
             ? "border-red-400 focus:border-red-400 focus:ring-red-400/15"
-            : "border-slate-200/90 focus:border-[#1B2CC1] focus:ring-[#1B2CC1]/15"
+            : "border-slate-200/90 focus:border-teal-brand focus:ring-teal-brand/15"
             }`}
         />
       </div>
