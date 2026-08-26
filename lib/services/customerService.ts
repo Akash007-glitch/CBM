@@ -41,12 +41,18 @@ export async function getCustomers(
     query = query.eq("assigned_salesman_id", filters.assigned_salesman_id);
   }
   if (filters.city) {
-    query = query.ilike("city", `%${filters.city}%`);
+    const cleanCity = filters.city.replace(/[,().%]/g, "").trim();
+    if (cleanCity) {
+      query = query.ilike("city", `%${cleanCity}%`);
+    }
   }
   if (filters.search) {
-    query = query.or(
-      `name.ilike.%${filters.search}%,email.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,customer_code.ilike.%${filters.search}%`
-    );
+    const cleanSearch = filters.search.replace(/[,().%]/g, "").trim();
+    if (cleanSearch) {
+      query = query.or(
+        `name.ilike.%${cleanSearch}%,email.ilike.%${cleanSearch}%,phone.ilike.%${cleanSearch}%,customer_code.ilike.%${cleanSearch}%`
+      );
+    }
   }
   if (filters.limit) {
     query = query.limit(filters.limit);

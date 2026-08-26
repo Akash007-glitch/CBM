@@ -437,7 +437,7 @@ export default function SalesmanDashboardPage() {
                       {/* Action Buttons Row: Call & Collect */}
                       <div className="flex items-center gap-2.5 mt-4">
                         <a
-                          href={`tel:${cust.phone}`}
+                          href={`tel:${(cust.phone || "").replace(/[^0-9+]/g, "")}`}
                           className="flex-1 h-9 border border-slate-200 hover:border-teal-brand/40 rounded-xl text-xs font-bold text-teal-brand flex items-center justify-center gap-1.5 transition-colors cursor-pointer bg-white"
                         >
                           <Phone className="w-3.5 h-3.5 text-teal-brand" />

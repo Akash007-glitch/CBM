@@ -68,9 +68,18 @@ export async function POST(request: NextRequest) {
       rows = [],
     } = body;
 
+    const MAX_IMPORT_ROWS = 5000;
+
     if (!fileName || !Array.isArray(rows) || rows.length === 0) {
       return NextResponse.json(
         { error: "fileName and a non-empty rows array are required." },
+        { status: 400 }
+      );
+    }
+
+    if (rows.length > MAX_IMPORT_ROWS) {
+      return NextResponse.json(
+        { error: `Import batch exceeds the maximum allowed limit of ${MAX_IMPORT_ROWS} rows.` },
         { status: 400 }
       );
     }
@@ -144,19 +153,40 @@ export async function POST(request: NextRequest) {
       raw_data: Json | null;
     }[] = [];
 
+function sanitizeFormula(val: unknown): string | null {
+  if (val === null || val === undefined) return null;
+  const str = String(val).trim();
+  if (!str) return null;
+  // If the value begins with formula characters, prefix with single quote to prevent spreadsheet injection
+  if (/^[=+@\-\t\r]/.test(str)) {
+    return `'${str}`;
+  }
+  return str;
+}
+
     for (const row of rows) {
-      if (!row.isValid) {
+      if (!row || !row.isValid) {
         importErrorsList.push({
-          row_number: row.rowNumber,
-          error_reason: row.errorReason || "Row validation failed",
+          row_number: row?.rowNumber || 0,
+          error_reason: row?.errorReason || "Row validation failed",
+          raw_data: (row?.rawRowData ?? {}) as unknown as Json,
+        });
+        continue;
+      }
+
+      const rawCustName = typeof row.customerName === "string" ? row.customerName.trim() : "";
+      if (!rawCustName) {
+        importErrorsList.push({
+          row_number: row.rowNumber || 0,
+          error_reason: "Customer name is missing or invalid.",
           raw_data: (row.rawRowData ?? {}) as unknown as Json,
         });
         continue;
       }
 
-      const normName = normalizeCustomerName(row.customerName);
-      const normCode = row.customerCode ? row.customerCode.trim().toLowerCase() : null;
-      const normGstin = row.gstin ? row.gstin.trim().toLowerCase() : null;
+      const normName = normalizeCustomerName(rawCustName);
+      const normCode = row.customerCode ? String(row.customerCode).trim().toLowerCase() : null;
+      const normGstin = row.gstin ? String(row.gstin).trim().toLowerCase() : null;
 
       const matchedId =
         (normCode ? customerMapByCode.get(normCode) : null) ||
@@ -166,15 +196,15 @@ export async function POST(request: NextRequest) {
       if (!matchedId) {
         if (!newCustomersToInsertMap.has(normName)) {
           newCustomersToInsertMap.set(normName, {
-            name: row.customerName.trim(),
-            customer_code: row.customerCode?.trim() || null,
-            phone: row.phone?.trim() || null,
-            email: row.email?.trim() || null,
-            address: row.address?.trim() || null,
-            city: row.city?.trim() || null,
-            state: row.state?.trim() || null,
-            pincode: row.pincode?.trim() || null,
-            gstin: row.gstin?.trim() || null,
+            name: sanitizeFormula(rawCustName) || rawCustName,
+            customer_code: sanitizeFormula(row.customerCode) || null,
+            phone: sanitizeFormula(row.phone) || null,
+            email: sanitizeFormula(row.email) || null,
+            address: sanitizeFormula(row.address) || null,
+            city: sanitizeFormula(row.city) || null,
+            state: sanitizeFormula(row.state) || null,
+            pincode: sanitizeFormula(row.pincode) || null,
+            gstin: sanitizeFormula(row.gstin) || null,
             is_active: true,
             opening_balance: 0,
             credit_limit: 0,
@@ -320,8 +350,8 @@ export async function POST(request: NextRequest) {
         import_batch_id: batchId,
         customer_id: customerId,
         transaction_date: row.transactionDate,
-        voucher_ref: row.voucherRef,
-        particulars: row.particulars,
+        voucher_ref: sanitizeFormula(row.voucherRef) || null,
+        particulars: sanitizeFormula(row.particulars) || null,
         debit: row.debit,
         credit: row.credit,
         balance: row.calculatedBalance,

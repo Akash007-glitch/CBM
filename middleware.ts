@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createProxySupabaseClient } from "@/lib/supabase/proxy-client";
 
 /**
- * ROUTE PROTECTION — proxy.ts (Next.js 16)
+ * ROUTE PROTECTION — middleware.ts (Next.js 16)
  *
- * This file runs ON THE SERVER before any page is rendered.
+ * This file runs ON THE SERVER at the edge before any page is rendered.
  * It uses @supabase/ssr to verify the actual Supabase session from cookies
- * (not hint cookies) and queries the `profiles` table for the user's role.
+ * and queries the `profiles` table for the user's role.
  *
  * Rules enforced:
  *  1. Protected route + no session            → redirect to / (login)
@@ -14,8 +14,8 @@ import { createProxySupabaseClient } from "@/lib/supabase/proxy-client";
  *  3. Salesman-only route + admin role        → redirect to /dashboard/admin
  *  4. Login page (/) + logged in              → redirect to role-appropriate dashboard
  *
- * IMPORTANT: This is a UX guard only. RLS on the database is the real security
- * boundary — every privileged database query is protected independently.
+ * IMPORTANT: This is a UX and edge routing guard. RLS on the database is the
+ * real security boundary — every privileged database query is protected independently.
  */
 
 // ── Route definitions ─────────────────────────────────────────────────────────
@@ -69,9 +69,9 @@ async function getUserRole(
   return null;
 }
 
-// ── Proxy function ────────────────────────────────────────────────────────────
+// ── Middleware function ───────────────────────────────────────────────────────
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Create Supabase client that can read/refresh the session from cookies.

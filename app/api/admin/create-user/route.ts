@@ -36,8 +36,6 @@ export async function POST(request: NextRequest) {
   }
 
   // ── 2. Verify the caller is an admin (independent of proxy) ────────────────
-  console.log('user object right before query:', callerUser);
-  console.log('user.id specifically:', callerUser?.id);
   const { data: callerProfile, error: profileError } = await supabase
     .from("profiles")
     .select("role")

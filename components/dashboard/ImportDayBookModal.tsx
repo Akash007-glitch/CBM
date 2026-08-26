@@ -241,8 +241,8 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                   {importResult.status === "completed"
                     ? "Day Book Import Complete!"
                     : importResult.status === "completed_with_errors"
-                    ? "Import Finished with Some Errors"
-                    : "Import Failed"}
+                      ? "Import Finished with Some Errors"
+                      : "Import Failed"}
                 </h3>
                 <p className="text-xs text-[#3E4947] mt-1 font-medium">
                   File: <span className="font-bold text-[#0B1C30]">{importResult.fileName}</span> &bull; Batch ID: {importResult.batchId.slice(0, 8)}
@@ -301,9 +301,8 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                       View {importResult.errors.length} Failed Row(s) Details
                     </span>
                     <ChevronDown
-                      className={`w-4 h-4 text-red-600 transform transition-transform ${
-                        showErrorDetails ? "rotate-180" : ""
-                      }`}
+                      className={`w-4 h-4 text-red-600 transform transition-transform ${showErrorDetails ? "rotate-180" : ""
+                        }`}
                     />
                   </button>
 
@@ -342,13 +341,12 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 group ${
-                  isDragging
-                    ? "border-teal-brand bg-[#EFF4FF]"
-                    : selectedFile
+                className={`border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 group ${isDragging
+                  ? "border-teal-brand bg-[#EFF4FF]"
+                  : selectedFile
                     ? "border-teal-brand/60 bg-[#F8F9FF]"
                     : "border-[#C8D3E8] bg-[#F8F9FF]/60 hover:bg-[#EFF4FF] hover:border-teal-brand/50"
-                }`}
+                  }`}
               >
                 <input
                   ref={fileInputRef}
@@ -402,55 +400,28 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
               </div>
 
               {/* IMPORT SETTINGS */}
-              <div className="space-y-2.5">
-                <h4 className="text-[11px] font-bold tracking-wider text-[#6E7977] uppercase">
-                  IMPORT SETTINGS
-                </h4>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#3E4947] mb-1.5">
-                      Target Ledger/Account
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={targetAccount}
-                        onChange={(e) => setTargetAccount(e.target.value)}
-                        className="w-full h-10 pl-3 pr-9 border border-[#CBD5E1] rounded-lg bg-white focus:border-teal-brand focus:ring-1 focus:ring-teal-brand text-xs font-medium text-[#0B1C30] outline-none appearance-none cursor-pointer"
-                      >
-                        <option value="day_book">Day Book / Cash Account</option>
-                        <option value="bank_hdfc">HDFC Bank Account - 4920</option>
-                        <option value="bank_sbi">SBI Operational Account</option>
-                        <option value="sales_general">Sales Ledger (General)</option>
-                        <option value="receivables">Customer Receivables Ledger</option>
-                      </select>
-                      <ChevronDown className="w-4 h-4 text-[#6E7977] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-3 pb-2 sm:pb-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setCheckDuplicates(!checkDuplicates)}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        checkDuplicates ? "bg-teal-brand" : "bg-[#CBD5E1]"
+              <div className="flex items-center gap-3 pb-2 sm:pb-2.5">
+                <button
+                  type="button"
+                  onClick={() => setCheckDuplicates(!checkDuplicates)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${checkDuplicates ? "bg-teal-brand" : "bg-[#CBD5E1]"
+                    }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${checkDuplicates ? "translate-x-5" : "translate-x-0"
                       }`}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                          checkDuplicates ? "translate-x-5" : "translate-x-0"
-                        }`}
-                      />
-                    </button>
-                    <span
-                      className="text-xs font-medium text-[#3E4947] select-none cursor-pointer"
-                      onClick={() => setCheckDuplicates(!checkDuplicates)}
-                    >
-                      Check for duplicate entries
-                    </span>
-                  </div>
-                </div>
+                  />
+                </button>
+                <span
+                  className="text-xs font-medium text-[#3E4947] select-none cursor-pointer"
+                  onClick={() => setCheckDuplicates(!checkDuplicates)}
+                >
+                  Check for duplicate entries
+                </span>
               </div>
+
 
               {/* DATA MAPPING & PREVIEW (ONLY WHEN FILE IS LOADED) */}
               {parseResult && (
@@ -498,11 +469,10 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                         <button
                           type="button"
                           onClick={() => setActivePreviewTab("rows")}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
-                            activePreviewTab === "rows"
-                              ? "bg-teal-brand text-white"
-                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                          }`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${activePreviewTab === "rows"
+                            ? "bg-teal-brand text-white"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                            }`}
                         >
                           <Table className="w-3.5 h-3.5" />
                           <span>Rows &amp; Balance Preview</span>
@@ -510,11 +480,10 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                         <button
                           type="button"
                           onClick={() => setActivePreviewTab("mapping")}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
-                            activePreviewTab === "mapping"
-                              ? "bg-teal-brand text-white"
-                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                          }`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${activePreviewTab === "mapping"
+                            ? "bg-teal-brand text-white"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                            }`}
                         >
                           <Pencil className="w-3.5 h-3.5" />
                           <span>Column Mappings ({mappings.filter((m) => m.erpField !== "ignore").length})</span>
@@ -571,7 +540,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                                   </td>
                                   <td className="py-2.5 px-3 text-center">
                                     {row.isValid ? (
-                                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
                                         <Check className="w-3 h-3" /> Valid
                                       </span>
                                     ) : !row.isBalanceMatched ? (
@@ -641,11 +610,10 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                                       </select>
                                     ) : (
                                       <span
-                                        className={`font-semibold ${
-                                          item.erpField === "ignore"
-                                            ? "text-gray-400 italic"
-                                            : "text-teal-brand"
-                                        }`}
+                                        className={`font-semibold ${item.erpField === "ignore"
+                                          ? "text-gray-400 italic"
+                                          : "text-teal-brand"
+                                          }`}
                                       >
                                         {matchedDef ? matchedDef.label : "Ignored"}
                                       </span>
@@ -715,7 +683,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
             )}
           </div>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };

@@ -32,7 +32,7 @@ export async function createServerSupabaseClient() {
             );
           } catch {
             // setAll called from a Server Component render — safe to ignore.
-            // The proxy.ts middleware is responsible for refreshing the session.
+            // The middleware.ts is responsible for refreshing the session.
           }
         },
       },

@@ -1,7 +1,7 @@
 /**
- * Supabase client factory for use inside proxy.ts (Next.js middleware).
+ * Supabase client factory for use inside middleware.ts (Next.js middleware).
  *
- * proxy.ts doesn't have access to next/headers — it must read/write cookies
+ * middleware.ts doesn't have access to next/headers — it must read/write cookies
  * directly from NextRequest and NextResponse objects passed in.
  *
  * Usage:
