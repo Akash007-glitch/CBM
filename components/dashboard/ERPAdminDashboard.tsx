@@ -8,7 +8,7 @@ import {
   Plus,
   ChevronDown,
   FileText,
-  DollarSign,
+  IndianRupee,
   AlertCircle,
 } from "lucide-react";
 import { useDashboardStore, useRealtimeMetrics } from "@/store/dashboardStore";
@@ -60,6 +60,9 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
 
     // Strip any remaining literal 'customer_id=' prefix
     text = text.replace(/customer_id=\s*/gi, "");
+
+    // Format payment amount with ₹ symbol if not already present
+    text = text.replace(/Payment of (?!\u20B9|\$|INR)(\d+(?:\.\d+)?)/gi, "Payment of ₹$1");
 
     return text;
   };
@@ -293,7 +296,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
               const isPayment = act.action?.includes('payment');
               const isAlert = act.action?.includes('overdue') || act.action?.includes('alert');
 
-              let icon = <DollarSign className="w-4 h-4 text-[#0051D5]" />;
+              let icon = <IndianRupee className="w-4 h-4 text-[#0051D5]" />;
               let iconBg = "bg-[#E5EEFF]";
 
               if (isAlert) {

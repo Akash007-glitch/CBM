@@ -9,7 +9,6 @@ import {
   Award,
   Wallet,
   Clock,
-  Calendar,
   Plus,
   LogOut,
   Menu,
@@ -17,6 +16,7 @@ import {
   Package,
 } from "lucide-react";
 import { useDashboardStore } from "@/store/dashboardStore";
+import { RealtimeCalendarPopover } from "./RealtimeCalendarPopover";
 
 export interface NavItem {
   label: string;
@@ -194,7 +194,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
       {/* ── Main Workspace Canvas ── */}
       <div data-component="DashboardShell/MainCanvas" className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* TopNavBar matching Stitch Specification */}
-        <header data-component="DashboardShell/TopNavBar" className="flex items-center justify-between gap-4 px-8 h-16 bg-white/80 backdrop-blur-md border-b border-[#E2E8F0] shadow-2xs shrink-0">
+        <header data-component="DashboardShell/TopNavBar" className="relative z-50 flex items-center justify-between gap-4 px-8 h-16 bg-white border-b border-[#E2E8F0] shadow-2xs shrink-0">
           <div className="flex items-center gap-6 flex-1 max-w-md">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -214,12 +214,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
 
           {/* Right actions */}
           <div className="flex items-center gap-4">
-            <button
-              className="text-[#3E4947] hover:text-teal-brand transition-colors p-2 rounded-full hover:bg-[#E5EEFF] cursor-pointer"
-              aria-label="Calendar"
-            >
-              <Calendar className="w-5 h-5" />
-            </button>
+            <RealtimeCalendarPopover />
 
             {/* Quick Add Button */}
             <button
