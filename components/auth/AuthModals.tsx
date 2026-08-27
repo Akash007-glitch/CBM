@@ -5,7 +5,8 @@ import { Modal } from "@/components/ui/Modal";
 import { AuthModalType } from "@/types/auth";
 import { SECURITY_METRICS } from "@/constants/auth";
 import { sendPasswordReset } from "@/lib/auth/authService";
-import { KeyRound, HelpCircle, FileText, Loader2 } from "lucide-react";
+import { KeyRound, HelpCircle, FileText } from "lucide-react";
+import { Spinner } from "@/components/ui/Spinner";
 
 interface AuthModalsProps {
   activeModal: AuthModalType;
@@ -76,7 +77,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
           >
             {isSending ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Spinner className="w-4 h-4 text-white" />
                 <span>Sending...</span>
               </>
             ) : (
@@ -94,7 +95,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
         icon={<HelpCircle className="w-5 h-5 text-teal-brand" />}
       >
         <div className="space-y-3 text-sm text-slate-600">
-          <p>Need assistance signing into your Shubh Enterprise account?</p>
+          <p>Need assistance signing into your Subh Enterprise account?</p>
           <ul className="list-disc pl-5 space-y-1 text-xs">
             <li>Verify you have selected the correct role (Admin or Salesman).</li>
             <li>Ensure caps lock is turned off when entering your password.</li>
@@ -122,7 +123,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
       >
         <div className="space-y-3 text-sm text-slate-600">
           <p>
-            Shubh Enterprise is protected by{" "}
+            Subh Enterprise is protected by{" "}
           </p>
           <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/70 text-xs space-y-1.5">
             {SECURITY_METRICS.map((metric) => (

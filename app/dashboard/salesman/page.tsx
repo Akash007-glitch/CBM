@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { useLogout, useUser } from "@/store/authStore";
 import { useDashboardStore, Customer } from "@/store/dashboardStore";
@@ -30,6 +30,7 @@ import {
   Copy,
   FileCheck,
 } from "lucide-react";
+import { Spinner } from "@/components/ui/Spinner";
 
 export default function SalesmanDashboardPage() {
   const logout = useLogout();
@@ -83,6 +84,12 @@ export default function SalesmanDashboardPage() {
   const [paymentMethod, setPaymentMethod] = useState<"Cash" | "Cheque" | "Transfer" | "Other">("Cash");
   const [referenceNumber, setReferenceNumber] = useState<string>("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+
+  // Synchronous submission lock refs to completely prevent multi-click races
+  const isFinalizingRef = useRef(false);
+  const isCreatingCustomerRef = useRef(false);
 
   // Collection Confirmation & Receipt Modal state
   const [isConfirmingCollection, setIsConfirmingCollection] = useState(false);
@@ -161,12 +168,14 @@ export default function SalesmanDashboardPage() {
 
   // Handle step 2: finalize collection & record to store with payment allocations
   const handleFinalizeCollection = async () => {
-    if (!collCustomer) return;
+    if (!collCustomer || isFinalizingRef.current) return;
+    isFinalizingRef.current = true;
 
     const collectedNum = parseFloat(amountCollected) || 0;
     const damageNum = parseFloat(damageDeduction) || 0;
     const discountNum = parseFloat(specialDiscount) || 0;
 
+    setIsFinalizing(true);
     try {
       if (!currentSalesmanId) {
         throw new Error("Your salesman profile is not set up correctly. Please contact the admin.");
@@ -226,14 +235,19 @@ export default function SalesmanDashboardPage() {
       setToastMessage(`Error: ${msg}`);
       setTimeout(() => setToastMessage(null), 4000);
       setIsConfirmingCollection(false);
+    } finally {
+      isFinalizingRef.current = false;
+      setIsFinalizing(false);
     }
   };
 
   // Handle Quick Add Customer submission
   const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCompanyName.trim()) return;
+    if (!newCompanyName.trim() || isCreatingCustomerRef.current) return;
+    isCreatingCustomerRef.current = true;
 
+    setIsCreatingCustomer(true);
     try {
       await addCustomer({
         name: newCompanyName.trim(),
@@ -256,6 +270,9 @@ export default function SalesmanDashboardPage() {
       const msg = err instanceof Error ? err.message : "Failed to add customer.";
       setToastMessage(`Error: ${msg}`);
       setTimeout(() => setToastMessage(null), 4000);
+    } finally {
+      isCreatingCustomerRef.current = false;
+      setIsCreatingCustomer(false);
     }
   };
 
@@ -870,16 +887,25 @@ export default function SalesmanDashboardPage() {
                 <div className="flex gap-2 pt-2">
                   <button
                     type="button"
+                    disabled={isCreatingCustomer}
                     onClick={() => setIsAddCustomerOpen(false)}
-                    className="flex-1 h-10 border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50"
+                    className="flex-1 h-10 border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 h-10 bg-teal-brand text-white rounded-xl font-bold hover:bg-teal-brand/90 shadow-xs"
+                    disabled={isCreatingCustomer}
+                    className="flex-1 h-10 bg-teal-brand text-white rounded-xl font-bold hover:bg-teal-brand/90 shadow-xs flex items-center justify-center gap-2 disabled:opacity-75"
                   >
-                    Create
+                    {isCreatingCustomer ? (
+                      <>
+                        <Spinner className="w-4 h-4 text-white" />
+                        <span>Creating...</span>
+                      </>
+                    ) : (
+                      "Create"
+                    )}
                   </button>
                 </div>
               </form>
@@ -963,18 +989,29 @@ export default function SalesmanDashboardPage() {
               <div className="flex gap-2 pt-1">
                 <button
                   type="button"
+                  disabled={isFinalizing}
                   onClick={() => setIsConfirmingCollection(false)}
-                  className="flex-1 h-11 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50 cursor-pointer transition-colors"
+                  className="flex-1 h-11 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50 cursor-pointer transition-colors disabled:opacity-50"
                 >
                   Edit Details
                 </button>
                 <button
                   type="button"
+                  disabled={isFinalizing}
                   onClick={handleFinalizeCollection}
-                  className="flex-[1.5] h-11 bg-teal-brand text-white rounded-xl text-xs font-bold hover:bg-teal-brand/90 shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                  className="flex-[1.5] h-11 bg-teal-brand text-white rounded-xl text-xs font-bold hover:bg-teal-brand/90 shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-colors disabled:opacity-75"
                 >
-                  <Check className="w-4 h-4 text-white stroke-3" />
-                  <span>Confirm & Submit</span>
+                  {isFinalizing ? (
+                    <>
+                      <Spinner className="w-4 h-4 text-white" />
+                      <span>Confirming...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 text-white stroke-3" />
+                      <span>Confirm & Submit</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

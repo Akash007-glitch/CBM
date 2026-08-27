@@ -3,8 +3,8 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Shubh Enterprise | Portal",
-  description: "Secure system authentication for Shubh Enterprise distribution management.",
+  title: "Subh Enterprise | Portal",
+  description: "Secure system authentication for Subh Enterprise distribution management.",
 };
 
 /**

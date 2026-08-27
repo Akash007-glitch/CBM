@@ -7,9 +7,10 @@ import {
   AlertTriangle,
   Plus,
   ChevronDown,
-  FileText,
-  IndianRupee,
+  Users,
   AlertCircle,
+  IndianRupee,
+  FileText,
 } from "lucide-react";
 import { useDashboardStore, useRealtimeMetrics } from "@/store/dashboardStore";
 
@@ -25,9 +26,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
     todaySales,
     todayCollections,
     totalOutstanding,
-    pendingInvoicesCount,
     totalCustomersCount,
-    mtdRevenueLakhs,
   } = useRealtimeMetrics();
 
   const activities = useDashboardStore((s) => s.activities);
@@ -126,10 +125,10 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
         </div>
       </div>
 
-      {/* KPI Bento Grid matching Stitch Specification */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-        {/* Card 1: Today's Sales */}
-        <div className="bg-white border border-[#E2E8F0] rounded-[14px] p-6 shadow-xs xl:col-span-2 flex flex-col justify-between relative overflow-hidden group">
+      {/* KPI Bento Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Card 1: Today's Sales (Total Cash Sale of Day) */}
+        <div className="bg-white border border-[#E2E8F0] rounded-[14px] p-6 shadow-xs flex flex-col justify-between relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-teal-brand/5 rounded-full blur-xl group-hover:bg-teal-brand/10 transition-colors pointer-events-none" />
           <div>
             <div className="flex justify-between items-start">
@@ -140,17 +139,17 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
                 <TrendingUp className="w-5 h-5" />
               </div>
             </div>
-            <div className="text-3xl sm:text-4xl font-bold text-[#0B1C30] mt-4 tracking-tight">
+            <div className="text-3xl font-bold text-[#0B1C30] mt-4 tracking-tight">
               {formatINR(todaySales)}
             </div>
           </div>
           <div className="flex items-center gap-1.5 mt-4 text-xs font-medium text-teal-brand">
-            <span>Live daily invoice total</span>
+            <span>Live daily cash sales</span>
           </div>
         </div>
 
         {/* Card 2: Today's Collections */}
-        <div className="bg-white border border-[#E2E8F0] rounded-[14px] p-6 shadow-xs xl:col-span-2 flex flex-col justify-between relative overflow-hidden group">
+        <div className="bg-white border border-[#E2E8F0] rounded-[14px] p-6 shadow-xs flex flex-col justify-between relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#0051D5]/5 rounded-full blur-xl group-hover:bg-[#0051D5]/10 transition-colors pointer-events-none" />
           <div>
             <div className="flex justify-between items-start">
@@ -161,7 +160,7 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
                 <CreditCard className="w-5 h-5" />
               </div>
             </div>
-            <div className="text-3xl sm:text-4xl font-bold text-[#0B1C30] mt-4 tracking-tight">
+            <div className="text-3xl font-bold text-[#0B1C30] mt-4 tracking-tight">
               {formatINR(todayCollections)}
             </div>
           </div>
@@ -170,8 +169,8 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
           </div>
         </div>
 
-        {/* Card 3: Total Outstanding */}
-        <div className="border border-[#BA1A1A]/30 bg-[#FFDAD6]/10 rounded-[14px] p-6 shadow-xs xl:col-span-2 flex flex-col justify-between relative overflow-hidden group">
+        {/* Card 3: Total Outstanding (Debit Balance of Parties) */}
+        <div className="border border-[#BA1A1A]/30 bg-[#FFDAD6]/10 rounded-[14px] p-6 shadow-xs flex flex-col justify-between relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#BA1A1A]/5 rounded-full blur-xl group-hover:bg-[#BA1A1A]/10 transition-colors pointer-events-none" />
           <div>
             <div className="flex justify-between items-start">
@@ -182,45 +181,34 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
                 <AlertTriangle className="w-5 h-5" />
               </div>
             </div>
-            <div className="text-3xl sm:text-4xl font-bold text-[#0B1C30] mt-4 tracking-tight">
+            <div className="text-3xl font-bold text-[#0B1C30] mt-4 tracking-tight">
               {formatINR(totalOutstanding)}
             </div>
           </div>
           <div className="flex items-center gap-1.5 mt-4 text-xs font-semibold text-[#BA1A1A]">
             <AlertCircle className="w-4 h-4" />
-            <span>Uncollected balance across all invoices</span>
+            <span>Debit balance across parties</span>
           </div>
         </div>
 
-        {/* Card 4: Pending Invoices */}
-        <div className="bg-white border border-[#E2E8F0] rounded-[14px] p-6 shadow-xs">
-          <span className="text-xs font-semibold text-[#3E4947] uppercase tracking-wider">
-            Pending Invoices
-          </span>
-          <div className="text-2xl sm:text-3xl font-bold text-[#0B1C30] mt-2">
-            {pendingInvoicesCount}
-          </div>
-        </div>
-
-        {/* Card 5: Total Customers */}
-        <div className="bg-white border border-[#E2E8F0] rounded-[14px] p-6 shadow-xs">
-          <span className="text-xs font-semibold text-[#3E4947] uppercase tracking-wider">
-            Total Customers
-          </span>
-          <div className="text-2xl sm:text-3xl font-bold text-[#0B1C30] mt-2">
-            {totalCustomersCount.toLocaleString("en-IN")}
-          </div>
-        </div>
-
-        {/* Card 6: Monthly Revenue (MTD) */}
-        <div className="bg-white border border-[#E2E8F0] rounded-[14px] p-6 shadow-xs xl:col-span-4 flex flex-row items-center justify-between">
+        {/* Card 4: Total Customers */}
+        <div className="bg-white border border-[#E2E8F0] rounded-[14px] p-6 shadow-xs flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-slate-900/5 rounded-full blur-xl group-hover:bg-slate-900/10 transition-colors pointer-events-none" />
           <div>
-            <span className="text-xs font-semibold text-[#3E4947] uppercase tracking-wider">
-              Monthly Revenue (MTD)
-            </span>
-            <div className="text-3xl sm:text-4xl font-bold text-[#0B1C30] mt-2 tracking-tight">
-              ₹{mtdRevenueLakhs} Lakhs
+            <div className="flex justify-between items-start">
+              <span className="text-xs font-semibold text-[#3E4947] uppercase tracking-wider">
+                Total Customers
+              </span>
+              <div className="p-1.5 rounded-md bg-slate-100 text-[#0B1C30] flex items-center justify-center">
+                <Users className="w-5 h-5" />
+              </div>
             </div>
+            <div className="text-3xl font-bold text-[#0B1C30] mt-4 tracking-tight">
+              {totalCustomersCount.toLocaleString("en-IN")}
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 mt-4 text-xs font-medium text-[#3E4947]">
+            <span>Active customer accounts</span>
           </div>
         </div>
       </div>

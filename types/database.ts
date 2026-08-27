@@ -144,6 +144,7 @@ export type Database = {
           transaction_date: string
           transaction_type: "debit" | "credit"
           voucher_ref: string | null
+          voucher_type: string | null
         }
         Insert: {
           amount?: number
@@ -162,6 +163,7 @@ export type Database = {
           transaction_date?: string
           transaction_type?: "debit" | "credit"
           voucher_ref?: string | null
+          voucher_type?: string | null
         }
         Update: {
           amount?: number
@@ -180,6 +182,7 @@ export type Database = {
           transaction_date?: string
           transaction_type?: "debit" | "credit"
           voucher_ref?: string | null
+          voucher_type?: string | null
         }
         Relationships: [
           {

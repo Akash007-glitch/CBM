@@ -193,3 +193,109 @@ export async function getCustomerOutstanding(customerId: string) {
   if (error) throw new Error(`getCustomerOutstanding: ${error.message}`);
   return data ?? [];
 }
+
+// ── Financial Summaries & Ledger RPCs ─────────────────────────────────────────
+
+export interface CustomerFinancialSummary {
+  customer_id: string;
+  customer_name: string;
+  customer_code: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  pincode: string | null;
+  gstin: string | null;
+  is_active: boolean;
+  credit_limit: number;
+  opening_balance: number;
+  daybook_debit: number;
+  daybook_credit: number;
+  invoice_debit: number;
+  payment_credit: number;
+  total_debit: number;
+  total_credit: number;
+  total_balance: number;
+}
+
+export interface CustomerLedgerEntry {
+  entry_id: string;
+  source: "day_book" | "invoice" | "payment";
+  entry_date: string;
+  voucher_no: string;
+  particulars: string;
+  debit: number;
+  credit: number;
+  balance: number | null;
+  created_at: string;
+}
+
+/**
+ * Returns aggregated financial breakdown (Opening, Debit, Credit, Net Balance)
+ * for a specific customer or all customers.
+ */
+export async function getCustomerFinancialSummaries(
+  customerId?: string
+): Promise<CustomerFinancialSummary[]> {
+  const { data, error } = await supabase.rpc("get_customer_financial_summaries", {
+    p_customer_id: customerId || null,
+  });
+
+  if (error) {
+    console.error("getCustomerFinancialSummaries error:", error);
+    throw new Error(`getCustomerFinancialSummaries: ${error.message}`);
+  }
+
+  return (data || []).map((row: Record<string, unknown>) => ({
+    customer_id: String(row.customer_id),
+    customer_name: String(row.customer_name || ""),
+    customer_code: row.customer_code ? String(row.customer_code) : null,
+    phone: row.phone ? String(row.phone) : null,
+    email: row.email ? String(row.email) : null,
+    address: row.address ? String(row.address) : null,
+    city: row.city ? String(row.city) : null,
+    state: row.state ? String(row.state) : null,
+    pincode: row.pincode ? String(row.pincode) : null,
+    gstin: row.gstin ? String(row.gstin) : null,
+    is_active: Boolean(row.is_active),
+    credit_limit: Number(row.credit_limit || 0),
+    opening_balance: Number(row.opening_balance || 0),
+    daybook_debit: Number(row.daybook_debit || 0),
+    daybook_credit: Number(row.daybook_credit || 0),
+    invoice_debit: Number(row.invoice_debit || 0),
+    payment_credit: Number(row.payment_credit || 0),
+    total_debit: Number(row.total_debit || 0),
+    total_credit: Number(row.total_credit || 0),
+    total_balance: Number(row.total_balance || 0),
+  }));
+}
+
+/**
+ * Returns chronological transaction ledger entries (Day Book, Invoices, Collections)
+ * for a customer.
+ */
+export async function getCustomerLedger(
+  customerId: string
+): Promise<CustomerLedgerEntry[]> {
+  const { data, error } = await supabase.rpc("get_customer_ledger", {
+    p_customer_id: customerId,
+  });
+
+  if (error) {
+    console.error("getCustomerLedger error:", error);
+    throw new Error(`getCustomerLedger: ${error.message}`);
+  }
+
+  return (data || []).map((row: Record<string, unknown>) => ({
+    entry_id: String(row.entry_id),
+    source: (row.source as "day_book" | "invoice" | "payment") || "day_book",
+    entry_date: String(row.entry_date || ""),
+    voucher_no: String(row.voucher_no || "—"),
+    particulars: String(row.particulars || ""),
+    debit: Number(row.debit || 0),
+    credit: Number(row.credit || 0),
+    balance: row.balance !== null && row.balance !== undefined ? Number(row.balance) : null,
+    created_at: String(row.created_at || ""),
+  }));
+}

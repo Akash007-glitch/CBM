@@ -28,18 +28,36 @@ body {
 }
 
 /* Lucide icons enter softly and respond when their control is interacted with. */
-.lucide {
+.lucide:not(.animate-spin):not([class*="animate-spin"]) {
   animation: icon-enter 220ms ease-out both;
   transition: transform 180ms ease, color 180ms ease, opacity 180ms ease;
 }
 
-button:not(:disabled):hover .lucide,
-a:hover .lucide {
+button:not(:disabled):hover .lucide:not(.animate-spin):not([class*="animate-spin"]),
+a:hover .lucide:not(.animate-spin):not([class*="animate-spin"]) {
   transform: translateY(-1px) scale(1.08);
 }
 
-button:not(:disabled):active .lucide {
+button:not(:disabled):active .lucide:not(.animate-spin):not([class*="animate-spin"]) {
   transform: scale(0.92);
+}
+
+/* Ensure all spinning loader elements animate with perfect, buttery-smooth GPU rotation */
+.animate-spin,
+[class*="animate-spin"] {
+  animation: smooth-spin 0.8s linear infinite !important;
+  transform-origin: center center !important;
+  will-change: transform;
+  transition: none !important;
+}
+
+@keyframes smooth-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes icon-enter {
@@ -57,5 +75,9 @@ button:not(:disabled):active .lucide {
   .lucide {
     animation: none;
     transition: none;
+  }
+  .animate-spin,
+  [class*="animate-spin"] {
+    animation: smooth-spin 1.5s linear infinite !important;
   }
 }

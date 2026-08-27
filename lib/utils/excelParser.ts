@@ -2,11 +2,13 @@ import * as XLSX from "xlsx";
 
 export type ERPField =
   | "transaction_date"
-  | "voucher_ref"
   | "customer_name"
-  | "particulars"
+  | "voucher_type"
+  | "voucher_ref"
   | "debit"
   | "credit"
+  | "opening_balance"
+  | "particulars"
   | "balance"
   | "amount"
   | "transaction_type"
@@ -32,42 +34,23 @@ export const ERP_FIELD_DEFINITIONS: ColumnMappingDefinition[] = [
     label: "Transaction Date",
     required: true,
     synonyms: [
-      "transaction date",
       "date",
+      "transaction date",
       "txn date",
-      "voucher date",
-      "posting date",
       "vch date",
+      "voucher date",
       "dt",
+      "posting date",
       "entry date",
     ],
   },
   {
-    erpField: "voucher_ref",
-    label: "Reference / Voucher No",
-    required: false,
-    synonyms: [
-      "reference no",
-      "reference number",
-      "reference",
-      "ref no",
-      "ref",
-      "voucher ref",
-      "voucher reference",
-      "voucher no",
-      "voucher number",
-      "vch no",
-      "invoice no",
-      "bill no",
-      "doc no",
-      "chq no",
-    ],
-  },
-  {
     erpField: "customer_name",
-    label: "Party / Customer Name",
+    label: "Customer / Ledger Name (Particulars)",
     required: true,
     synonyms: [
+      "particulars",
+      "particular",
       "party name",
       "party",
       "customer name",
@@ -78,35 +61,61 @@ export const ERP_FIELD_DEFINITIONS: ColumnMappingDefinition[] = [
       "account",
       "client name",
       "client",
-      "particulars/party",
+      "particulars party",
     ],
   },
   {
-    erpField: "particulars",
-    label: "Particulars / Description",
-    required: false,
+    erpField: "voucher_type",
+    label: "Voucher Type (Vch Type)",
+    required: true,
     synonyms: [
-      "particulars",
-      "description",
-      "narration",
-      "remarks",
-      "details",
-      "note",
-      "notes",
-      "transaction details",
-      "item description",
+      "vch type",
+      "voucher type",
+      "vchtype",
+      "vch type.",
+      "vch_type",
+      "type",
+      "txn type",
+      "transaction type",
+    ],
+  },
+  {
+    erpField: "voucher_ref",
+    label: "Voucher Number (Vch No.)",
+    required: true,
+    synonyms: [
+      "vch no",
+      "vch no.",
+      "voucher no",
+      "voucher no.",
+      "voucher number",
+      "vch number",
+      "vchno",
+      "reference no",
+      "reference no.",
+      "ref no",
+      "ref no.",
+      "reference",
+      "ref",
+      "invoice no",
+      "invoice no.",
+      "bill no",
+      "doc no",
+      "chq no",
     ],
   },
   {
     erpField: "debit",
-    label: "Debit (Money In)",
+    label: "Debit Amount",
     required: false,
     synonyms: [
-      "debit",
-      "dr",
-      "dr amount",
       "debit amount",
+      "debit",
+      "dr amount",
+      "dr",
+      "debit amt",
       "dr.",
+      "inwards amount",
       "receipts",
       "inflow",
       "deposit",
@@ -114,17 +123,54 @@ export const ERP_FIELD_DEFINITIONS: ColumnMappingDefinition[] = [
   },
   {
     erpField: "credit",
-    label: "Credit (Money Out)",
+    label: "Credit Amount",
     required: false,
     synonyms: [
-      "credit",
-      "cr",
-      "cr amount",
       "credit amount",
+      "credit",
+      "cr amount",
+      "cr",
+      "credit amt",
       "cr.",
+      "outwards amount",
       "payments",
       "outflow",
       "withdrawal",
+    ],
+  },
+  {
+    erpField: "opening_balance",
+    label: "Opening Balance",
+    required: false,
+    synonyms: [
+      "opening balance",
+      "opening bal",
+      "op balance",
+      "op bal",
+      "opening",
+      "open bal",
+      "open balance",
+      "previous balance",
+      "prev balance",
+      "opening debit",
+      "opening credit",
+      "op. bal.",
+      "op. balance",
+    ],
+  },
+  {
+    erpField: "particulars",
+    label: "Narration / Description",
+    required: false,
+    synonyms: [
+      "narration",
+      "description",
+      "remarks",
+      "details",
+      "note",
+      "notes",
+      "transaction details",
+      "item description",
     ],
   },
   {
@@ -159,9 +205,6 @@ export const ERP_FIELD_DEFINITIONS: ColumnMappingDefinition[] = [
     label: "Transaction Type (Dr/Cr)",
     required: false,
     synonyms: [
-      "transaction type",
-      "txn type",
-      "type",
       "dr/cr",
       "cr/dr",
       "entry type",
@@ -243,15 +286,17 @@ export interface ColumnMapping {
 export interface NormalizedDayBookRow {
   rowNumber: number;
   transactionDate: string; // YYYY-MM-DD
-  voucherRef: string | null;
-  customerName: string;
-  particulars: string | null;
-  debit: number;
-  credit: number;
-  calculatedBalance: number;
+  voucherType: string | null; // e.g. "Sales", "Receipt", "Payment"
+  voucherRef: string | null; // e.g. "1909" (Voucher Number)
+  customerName: string; // From Particulars / Ledger
+  particulars: string | null; // Full raw particulars or narration
+  openingBalance?: number;
+  debit: number; // 0 if empty
+  credit: number; // 0 if empty
+  calculatedBalance: number; // Running balance: Op. Bal + Debit - Credit
   excelBalance: number | null;
-  balance: number; // final balance (calculated)
-  amount: number; // positive value for backwards compatibility
+  balance: number;
+  amount: number; // Debit > 0 ? Debit : Credit
   transactionType: "debit" | "credit";
   customerCode?: string | null;
   phone?: string | null;
@@ -292,8 +337,24 @@ export function normalizeCustomerName(name: string): string {
     .toLowerCase();
 }
 
+const MONTH_NAME_MAP: Record<string, string> = {
+  jan: "01", january: "01",
+  feb: "02", february: "02",
+  mar: "03", march: "03",
+  apr: "04", april: "04",
+  may: "05",
+  jun: "06", june: "06",
+  jul: "07", july: "07",
+  aug: "08", august: "08",
+  sep: "09", sept: "09", september: "09",
+  oct: "10", october: "10",
+  nov: "11", november: "11",
+  dec: "12", december: "12",
+};
+
 /**
- * Converts various date formats into YYYY-MM-DD
+ * Converts various date formats into YYYY-MM-DD.
+ * Handles Excel serial numbers, text dates (e.g. 26-Aug-26, 26-Aug-2026), and standard DD/MM/YYYY.
  */
 export function parseExcelDate(value: unknown): string {
   if (!value) {
@@ -319,6 +380,20 @@ export function parseExcelDate(value: unknown): string {
   const str = String(value).trim();
   if (!str) return new Date().toISOString().split("T")[0];
 
+  // Match text-month dates like "26-Aug-26", "26-Aug-2026", "26 Aug 2026", "26/Aug/26"
+  const textMonthMatch = str.match(/^(\d{1,2})[-/.\s]+([A-Za-z]{3,9})[-/.\s]+(\d{2,4})$/);
+  if (textMonthMatch) {
+    const d = textMonthMatch[1].padStart(2, "0");
+    const mKey = textMonthMatch[2].toLowerCase();
+    const m = MONTH_NAME_MAP[mKey] || "01";
+    let y = textMonthMatch[3];
+    if (y.length === 2) {
+      const numY = parseInt(y, 10);
+      y = numY > 50 ? `19${y}` : `20${y}`;
+    }
+    return `${y}-${m}-${d}`;
+  }
+
   // Try ISO YYYY-MM-DD or YYYY/MM/DD
   const isoMatch = str.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
   if (isoMatch) {
@@ -335,7 +410,8 @@ export function parseExcelDate(value: unknown): string {
     const m = dmyMatch[2].padStart(2, "0");
     let y = dmyMatch[3];
     if (y.length === 2) {
-      y = parseInt(y, 10) > 50 ? `19${y}` : `20${y}`;
+      const numY = parseInt(y, 10);
+      y = numY > 50 ? `19${y}` : `20${y}`;
     }
     return `${y}-${m}-${d}`;
   }
@@ -350,7 +426,8 @@ export function parseExcelDate(value: unknown): string {
 }
 
 /**
- * Normalizes amount string/number
+ * Normalizes amount string or number.
+ * Empty or unparseable values safely default to 0.
  */
 export function parseExcelAmount(value: unknown): {
   amount: number;
@@ -360,16 +437,17 @@ export function parseExcelAmount(value: unknown): {
   isCredit: boolean;
 } {
   if (typeof value === "number") {
+    const isNeg = value < 0;
     return {
       amount: Math.abs(value),
       amountSigned: value,
-      isNegative: value < 0,
-      isDebit: value >= 0,
-      isCredit: value < 0,
+      isNegative: isNeg,
+      isDebit: !isNeg,
+      isCredit: isNeg,
     };
   }
 
-  if (!value) {
+  if (value === null || value === undefined || value === "") {
     return {
       amount: 0,
       amountSigned: 0,
@@ -380,6 +458,16 @@ export function parseExcelAmount(value: unknown): {
   }
 
   let str = String(value).trim();
+  if (!str) {
+    return {
+      amount: 0,
+      amountSigned: 0,
+      isNegative: false,
+      isDebit: true,
+      isCredit: false,
+    };
+  }
+
   const isDr = /\b(dr|debit)\b/i.test(str);
   const isCr = /\b(cr|credit)\b/i.test(str);
   const isParenthesesNegative = /^\(.*\)$/.test(str);
@@ -400,35 +488,46 @@ export function parseExcelAmount(value: unknown): {
     amount: Math.abs(validNum),
     amountSigned,
     isNegative,
-    isDebit: isDr || (!isCr && !isNegative),
-    isCredit: isCr || isNegative,
+    isDebit: !isNegative && (isDr || validNum >= 0),
+    isCredit: isNegative || isCr,
   };
 }
 
 /**
- * Generates deterministic duplicate hash based on voucher_ref or transaction details.
- * Balance is deliberately excluded from hash.
+ * Sanitizes formula injection characters (=, +, -, @, \t, \r)
+ */
+export function sanitizeFormula(value: string | null | undefined): string {
+  if (!value) return "";
+  const str = String(value).trim();
+  if (/^[=+\-@\t\r]/.test(str)) {
+    return `'${str}`;
+  }
+  return str;
+}
+
+/**
+ * Generates deterministic duplicate hash based on the real Day Book transaction identity:
+ * Voucher Type + Voucher Number + Transaction Date + Customer/Particulars
  */
 export function generateDuplicateHash(
-  customerName: string,
-  voucherRef: string | null,
+  particulars: string,
+  voucherType: string | null,
+  voucherNumber: string | null,
   transactionDate: string,
-  debit: number,
-  credit: number,
-  particulars: string | null = null
+  debit: number = 0,
+  credit: number = 0
 ): string {
-  const normName = normalizeCustomerName(customerName);
-  const normRef = (voucherRef || "").trim().toLowerCase();
+  const normName = normalizeCustomerName(particulars);
+  const normType = (voucherType || "sales").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+  const normNo = (voucherNumber || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
   const normDate = transactionDate.trim();
   const normDeb = Number(debit || 0).toFixed(2);
   const normCred = Number(credit || 0).toFixed(2);
 
-  if (normRef) {
-    return `${normName}::ref_${normRef}::${normDate}::deb_${normDeb}::cred_${normCred}`;
+  if (normNo) {
+    return `${normType}::${normNo}::${normDate}::${normName}`;
   }
-
-  const normPart = (particulars || "").trim().toLowerCase().slice(0, 40);
-  return `${normName}::part_${normPart}::${normDate}::deb_${normDeb}::cred_${normCred}`;
+  return `${normType}::${normDate}::${normName}::deb_${normDeb}::cred_${normCred}`;
 }
 
 /**
@@ -444,7 +543,11 @@ export function detectColumnMapping(
     .replace(/[^a-z0-9]/g, " ")
     .replace(/\s+/g, " ");
 
-  // Exact synonym match
+  if (!cleanHeader) {
+    return { erpField: "ignore", confidence: 0 };
+  }
+
+  // Exact synonym match (Priority 1)
   for (const def of ERP_FIELD_DEFINITIONS) {
     for (const syn of def.synonyms) {
       if (cleanHeader === syn) {
@@ -453,19 +556,22 @@ export function detectColumnMapping(
     }
   }
 
-  // Partial match
+  // Partial match (Priority 2)
   for (const def of ERP_FIELD_DEFINITIONS) {
     for (const syn of def.synonyms) {
-      if (cleanHeader.includes(syn) || syn.includes(cleanHeader)) {
-        return { erpField: def.erpField, confidence: 0.8 };
+      if (cleanHeader.includes(syn) || (syn.length > 3 && cleanHeader.startsWith(syn))) {
+        return { erpField: def.erpField, confidence: 0.85 };
       }
     }
   }
 
   // Value inspection fallback
   if (sampleValue) {
-    const sampleStr = String(sampleValue);
-    if (/^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}$/.test(sampleStr)) {
+    const sampleStr = String(sampleValue).trim();
+    if (
+      /^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}$/.test(sampleStr) ||
+      /^\d{1,2}[/-][A-Za-z]{3}[/-]\d{2,4}$/.test(sampleStr)
+    ) {
       return { erpField: "transaction_date", confidence: 0.6 };
     }
     if (/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(sampleStr)) {
@@ -477,9 +583,14 @@ export function detectColumnMapping(
 }
 
 /**
- * Reads an uploaded Excel / CSV File and generates mappings & preview rows
+ * Reads an uploaded Excel / CSV File and generates mappings & preview rows.
+ * Automatically detects report header rows (e.g. SUBH ENTERPRISE, Day Book)
+ * and isolates the true column header row.
  */
-export async function parseExcelFile(file: File): Promise<ParseExcelResult> {
+export async function parseExcelFile(
+  file: File,
+  initialCustomerBalances?: Map<string, number>
+): Promise<ParseExcelResult> {
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
 
@@ -501,20 +612,31 @@ export async function parseExcelFile(file: File): Promise<ParseExcelResult> {
     throw new Error("No data found in sheet '" + firstSheetName + "'.");
   }
 
-  // Scan first 15 rows to find the best header row (e.g. skipping report titles in Tally/Busy)
+  // Scan first 30 rows to find the true header row
   let bestHeaderRowIndex = 0;
   let maxScore = 0;
 
-  const maxScanRows = Math.min(raw2D.length, 15);
+  const maxScanRows = Math.min(raw2D.length, 30);
   for (let r = 0; r < maxScanRows; r++) {
     const rowValues = (raw2D[r] || []).map((v) => String(v || "").trim()).filter(Boolean);
-    if (rowValues.length === 0) continue;
+    if (rowValues.length < 2) continue;
 
     let score = 0;
     for (const val of rowValues) {
       const match = detectColumnMapping(val);
-      if (match.erpField !== "ignore" && match.confidence >= 0.7) {
-        score++;
+      if (match.erpField !== "ignore") {
+        if (
+          match.erpField === "transaction_date" ||
+          match.erpField === "customer_name" ||
+          match.erpField === "voucher_type" ||
+          match.erpField === "voucher_ref" ||
+          match.erpField === "debit" ||
+          match.erpField === "credit"
+        ) {
+          score += 3; // high weight for the 6 primary Day Book columns
+        } else {
+          score += 1;
+        }
       }
     }
 
@@ -528,22 +650,34 @@ export async function parseExcelFile(file: File): Promise<ParseExcelResult> {
   const rawRows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(sheet, {
     range: bestHeaderRowIndex,
     defval: "",
-    raw: true, // return actual numbers so parseExcelAmount gets JS numbers, not formatted strings
+    raw: true, // return actual numbers
   });
 
   if (!rawRows || rawRows.length === 0) {
-    throw new Error("No data found in sheet '" + firstSheetName + "'.");
+    throw new Error("No transaction data found in sheet '" + firstSheetName + "'.");
   }
 
   // Extract raw headers (filtering out unnamed empty columns)
-  const headers = Object.keys(rawRows[0] || {}).filter(
-    (h) => h && !h.startsWith("__EMPTY")
-  );
+  const headerKeys = Object.keys(rawRows[0] || {});
+  const headers = headerKeys.filter((h) => h && !h.startsWith("__EMPTY"));
 
   // Build initial mappings
   const usedErpFields = new Set<string>();
   const mappings: ColumnMapping[] = headers.map((col) => {
-    const sample = rawRows[0]?.[col] ? String(rawRows[0][col]) : "";
+    // Find a non-empty sample value across top 6 rows (skipping subheaders)
+    let sample = "";
+    for (let r = 0; r < Math.min(rawRows.length, 6); r++) {
+      const v = rawRows[r]?.[col];
+      const strVal = String(v ?? "").trim();
+      if (
+        strVal !== "" &&
+        !/inwards?\s*qty|outwards?\s*qty/i.test(strVal)
+      ) {
+        sample = strVal;
+        break;
+      }
+    }
+
     const match = detectColumnMapping(col, sample);
 
     let erpField: ERPField | "ignore" = match.erpField;
@@ -561,23 +695,14 @@ export async function parseExcelFile(file: File): Promise<ParseExcelResult> {
     };
   });
 
-  // If customer_name was not assigned but particulars or party column is present, assign it
-  const hasCustomerCol = mappings.some((m) => m.erpField === "customer_name");
-  if (!hasCustomerCol) {
-    const partMapping = mappings.find((m) => m.erpField === "particulars");
-    if (partMapping) {
-      partMapping.erpField = "customer_name";
-    } else {
-      // Find first string column
-      const firstStrCol = mappings.find((m) => m.erpField === "ignore");
-      if (firstStrCol) {
-        firstStrCol.erpField = "customer_name";
-      }
-    }
-  }
-
   // Convert raw rows using detected mappings
-  return transformRowsWithMappings(sheetNameOrDefault(firstSheetName), headers, rawRows, mappings);
+  return transformRowsWithMappings(
+    sheetNameOrDefault(firstSheetName),
+    headers,
+    rawRows,
+    mappings,
+    initialCustomerBalances
+  );
 }
 
 function sheetNameOrDefault(name: string): string {
@@ -591,7 +716,8 @@ export function transformRowsWithMappings(
   sheetName: string,
   headers: string[],
   rawRows: Record<string, unknown>[],
-  mappings: ColumnMapping[]
+  mappings: ColumnMapping[],
+  initialCustomerBalances?: Map<string, number>
 ): ParseExcelResult {
   const mappingMap = new Map<ERPField, string>();
   mappings.forEach((m) => {
@@ -607,20 +733,24 @@ export function transformRowsWithMappings(
   let errorCount = 0;
   let balanceMismatchCount = 0;
 
-  // Running balances: global account running balance AND per-party running balance
-  let accountRunningBalance = 0;
+  // Running balance per customer
   const partyRunningBalances = new Map<string, number>();
 
   for (let i = 0; i < rawRows.length; i++) {
     const raw = rawRows[i];
-    const rowNumber = i + 2; // Row 1 is header, data starts at row 2
+    const rowNumber = i + 2;
 
-    // Check if entire row is empty
-    const hasAnyContent = Object.values(raw).some(
-      (v) => v !== "" && v !== null && v !== undefined
-    );
+    // Extract non-empty row cell values
+    const rowValues = Object.values(raw).map((v) => String(v ?? "").trim());
+    const hasAnyContent = rowValues.some((v) => v !== "");
     if (!hasAnyContent) {
-      continue; // skip completely empty rows
+      continue;
+    }
+
+    // Check for row of separators like '---', '===', '***'
+    const nonBlankValues = rowValues.filter((v) => v !== "");
+    if (nonBlankValues.length > 0 && nonBlankValues.every((v) => /^[-=_*~#|]+$/.test(v))) {
+      continue;
     }
 
     // Extract fields using mapping
@@ -630,11 +760,17 @@ export function transformRowsWithMappings(
     const rawCustomer = mappingMap.has("customer_name")
       ? raw[mappingMap.get("customer_name")!]
       : "";
+    const rawVchType = mappingMap.has("voucher_type")
+      ? raw[mappingMap.get("voucher_type")!]
+      : "";
     const rawVoucher = mappingMap.has("voucher_ref")
       ? raw[mappingMap.get("voucher_ref")!]
       : "";
     const rawParticulars = mappingMap.has("particulars")
       ? raw[mappingMap.get("particulars")!]
+      : "";
+    const rawOpening = mappingMap.has("opening_balance")
+      ? raw[mappingMap.get("opening_balance")!]
       : "";
 
     // Debit, Credit, Balance, Amount extraction
@@ -642,11 +778,8 @@ export function transformRowsWithMappings(
     const rawCredit = mappingMap.has("credit") ? raw[mappingMap.get("credit")!] : "";
     const rawBalance = mappingMap.has("balance") ? raw[mappingMap.get("balance")!] : "";
     const rawAmount = mappingMap.has("amount") ? raw[mappingMap.get("amount")!] : "";
-    const rawType = mappingMap.has("transaction_type")
-      ? raw[mappingMap.get("transaction_type")!]
-      : "";
 
-    // Optional customer metadata fields
+    // Customer metadata fields
     const rawCode = mappingMap.has("customer_code")
       ? raw[mappingMap.get("customer_code")!]
       : "";
@@ -658,58 +791,92 @@ export function transformRowsWithMappings(
     const rawPincode = mappingMap.has("pincode") ? raw[mappingMap.get("pincode")!] : "";
     const rawGstin = mappingMap.has("gstin") ? raw[mappingMap.get("gstin")!] : "";
 
+    // In the real Day Book: Particulars IS the customer name
     const customerName = String(rawCustomer || rawParticulars || "").trim();
-    const transactionDate = parseExcelDate(rawDate);
+    const dateStr = String(rawDate ?? "").trim();
+    const voucherType = rawVchType ? String(rawVchType).trim() : null;
     const voucherRef = rawVoucher ? String(rawVoucher).trim() : null;
-    const particulars = rawParticulars ? String(rawParticulars).trim() : null;
+    const particulars = rawParticulars ? String(rawParticulars).trim() : customerName;
 
-    // Determine Debit and Credit amounts
+    // Comprehensive Summary / Footer Keywords Pattern
+    const SUMMARY_KEYWORDS_PATTERN = /^(total|totals|grand\s*total|sub\s*total|subtotal|closing\s*balance|summary|brought\s*forward|carried\s*forward|b\/f|c\/f|inwards?\s*qty|outwards?\s*qty)$/i;
+
+    // 1. If any cell in the row matches summary keywords (e.g. Date: "TOTAL" or Particulars: "Total")
+    const hasSummaryCell = nonBlankValues.some((v) => SUMMARY_KEYWORDS_PATTERN.test(v));
+    const isCustomerSummary = SUMMARY_KEYWORDS_PATTERN.test(customerName);
+    const isDateSummary = SUMMARY_KEYWORDS_PATTERN.test(dateStr);
+    const isVoucherSummary = voucherType ? SUMMARY_KEYWORDS_PATTERN.test(voucherType) : false;
+
+    if (hasSummaryCell || isCustomerSummary || isDateSummary || isVoucherSummary) {
+      continue; // Silently skip report summary/total/subtotal footers
+    }
+
+    // Skip repeated header row
+    if (
+      (customerName.toLowerCase() === "particulars" || customerName.toLowerCase() === "party name" || customerName.toLowerCase() === "customer") &&
+      (dateStr.toLowerCase() === "date" || dateStr.toLowerCase() === "vch date" || dateStr.toLowerCase() === "transaction date")
+    ) {
+      continue;
+    }
+
+    // Skip rows where both customerName is empty AND voucherRef is empty
+    if (!customerName && !voucherRef) {
+      continue;
+    }
+
+    const transactionDate = parseExcelDate(rawDate);
+
+    // Optional Opening Balance parsed from row
+    let rowOpeningBalance: number | undefined = undefined;
+    if (rawOpening !== "" && rawOpening !== null && rawOpening !== undefined) {
+      rowOpeningBalance = parseExcelAmount(rawOpening).amountSigned;
+    }
+
+    // Determine Debit and Credit amounts (default 0 if empty)
     let debitAmount = 0;
     let creditAmount = 0;
-    const hasDebitCol = mappingMap.has("debit");
-    const hasCreditCol = mappingMap.has("credit");
 
-    if (hasDebitCol || hasCreditCol) {
-      if (rawDebit !== "" && rawDebit !== null && rawDebit !== undefined) {
-        debitAmount = parseExcelAmount(rawDebit).amount;
-      }
-      if (rawCredit !== "" && rawCredit !== null && rawCredit !== undefined) {
-        creditAmount = parseExcelAmount(rawCredit).amount;
-      }
-    } else if (mappingMap.has("amount")) {
+    if (rawDebit !== "" && rawDebit !== null && rawDebit !== undefined) {
+      debitAmount = parseExcelAmount(rawDebit).amount;
+    }
+    if (rawCredit !== "" && rawCredit !== null && rawCredit !== undefined) {
+      creditAmount = parseExcelAmount(rawCredit).amount;
+    }
+
+    // If only generic amount column was provided
+    if (debitAmount === 0 && creditAmount === 0 && rawAmount !== "") {
       const parsedAmt = parseExcelAmount(rawAmount);
-      if (rawType) {
-        const typeStr = String(rawType).trim().toLowerCase();
-        if (typeStr.includes("dr") || typeStr.includes("deb")) {
-          debitAmount = parsedAmt.amount;
-          creditAmount = 0;
-        } else {
-          debitAmount = 0;
-          creditAmount = parsedAmt.amount;
-        }
-      } else if (parsedAmt.isDebit) {
-        debitAmount = parsedAmt.amount;
-        creditAmount = 0;
-      } else {
-        debitAmount = 0;
+      if (voucherType && /receipt|payment|credit/i.test(voucherType)) {
         creditAmount = parsedAmt.amount;
+      } else {
+        debitAmount = parsedAmt.amount;
       }
     }
 
-    // Determine transaction type and amount
+    // Determine transaction type and total amount
     const transactionType: "debit" | "credit" = debitAmount > 0 ? "debit" : "credit";
     const totalTxnAmount = Math.max(debitAmount, creditAmount);
 
-    // Compute both global account running balance and per-party running balance
+    // Compute running balance per party
     const normPartyKey = normalizeCustomerName(customerName);
+
+    if (!partyRunningBalances.has(normPartyKey)) {
+      const initialBal =
+        rowOpeningBalance !== undefined
+          ? rowOpeningBalance
+          : (initialCustomerBalances?.get(normPartyKey) ?? 0);
+      partyRunningBalances.set(normPartyKey, initialBal);
+    }
+
     const prevPartyBal = partyRunningBalances.get(normPartyKey) ?? 0;
     const calculatedPartyBalance = prevPartyBal + debitAmount - creditAmount;
     partyRunningBalances.set(normPartyKey, calculatedPartyBalance);
 
-    const calculatedAccountBalance = accountRunningBalance + debitAmount - creditAmount;
-    accountRunningBalance = calculatedAccountBalance;
-
     const calculatedBalance = calculatedPartyBalance;
+    const effectiveOpeningBalance =
+      rowOpeningBalance !== undefined
+        ? rowOpeningBalance
+        : (initialCustomerBalances?.get(normPartyKey) ?? 0);
 
     // Excel Balance Validation (if present)
     let excelBalance: number | null = null;
@@ -720,10 +887,8 @@ export function transformRowsWithMappings(
       const parsedBal = parseExcelAmount(rawBalance);
       excelBalance = parsedBal.amountSigned;
 
-      const matchesAccount = Math.abs(calculatedAccountBalance - excelBalance) <= 0.01;
       const matchesParty = Math.abs(calculatedPartyBalance - excelBalance) <= 0.01;
-
-      if (!matchesAccount && !matchesParty) {
+      if (!matchesParty) {
         isBalanceMatched = false;
         balanceMismatchCount++;
         balanceErrorReason = `Balance notice: calculated ₹${calculatedBalance.toLocaleString(
@@ -738,8 +903,11 @@ export function transformRowsWithMappings(
 
     if (!customerName) {
       isValid = false;
-      errorReason = "Missing Customer / Party name";
-    } else if (debitAmount === 0 && creditAmount === 0 && totalTxnAmount === 0) {
+      errorReason = "Missing Customer / Particulars name";
+    } else if (!rawDate) {
+      isValid = false;
+      errorReason = "Missing transaction Date";
+    } else if (debitAmount === 0 && creditAmount === 0 && totalTxnAmount === 0 && (rowOpeningBalance === undefined || rowOpeningBalance === 0)) {
       isValid = false;
       errorReason = "Transaction must have a non-zero Debit or Credit amount";
     } else if (balanceErrorReason) {
@@ -747,8 +915,7 @@ export function transformRowsWithMappings(
     }
 
     if (isValid) {
-      const normName = normalizeCustomerName(customerName);
-      uniqueCustomerSet.add(normName);
+      uniqueCustomerSet.add(normPartyKey);
       validCount++;
     } else {
       errorCount++;
@@ -756,19 +923,21 @@ export function transformRowsWithMappings(
 
     const duplicateHash = generateDuplicateHash(
       customerName || `unknown_${rowNumber}`,
+      voucherType,
       voucherRef,
       transactionDate,
       debitAmount,
-      creditAmount,
-      particulars
+      creditAmount
     );
 
     normalizedRows.push({
       rowNumber,
       transactionDate,
+      voucherType,
       voucherRef,
       customerName,
       particulars,
+      openingBalance: effectiveOpeningBalance,
       debit: debitAmount,
       credit: creditAmount,
       calculatedBalance,

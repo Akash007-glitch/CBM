@@ -119,7 +119,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
             <Package className="w-6 h-6" />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="text-xl font-bold text-white tracking-tight leading-tight">Shubh Enterprise</h2>
+            <h2 className="text-xl font-bold text-white tracking-tight leading-tight">Subh Enterprise</h2>
             <p className="text-xs text-[#BAC8FF] font-semibold">Best in </p>
           </div>
           <button
@@ -206,7 +206,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
 
             {/* Title */}
             <span className="font-semibold text-lg text-teal-brand tracking-tight hidden sm:block">
-              Shubh Enterprise
+              Subh Enterprise
             </span>
 
 

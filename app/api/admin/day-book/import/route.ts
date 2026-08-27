@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── 4. Create Import Batch Record using Authenticated Admin Client ────────
-    const { data: batchData, error: batchError } = await dbClient
+    let { data: batchData, error: batchError } = await dbClient
       .from("import_batches")
       .insert({
         file_name: fileName,
@@ -97,6 +97,25 @@ export async function POST(request: NextRequest) {
       })
       .select("id")
       .single();
+
+    if (batchError && dbClient !== supabase) {
+      console.warn("[day-book/import] Service role client failed, retrying with authenticated admin client:", batchError.message);
+      dbClient = supabase;
+      const retry = await dbClient
+        .from("import_batches")
+        .insert({
+          file_name: fileName,
+          file_size: fileSize,
+          target_account: targetAccount,
+          total_rows: rows.length,
+          status: "processing",
+          uploaded_by: callerUser.id,
+        })
+        .select("id")
+        .single();
+      batchData = retry.data;
+      batchError = retry.error;
+    }
 
     if (batchError || !batchData) {
       console.error("[day-book/import] Failed to create import batch:", batchError);
@@ -111,7 +130,7 @@ export async function POST(request: NextRequest) {
     // ── 5. Fetch Existing Customers for Matching ─────────────────────────────
     const { data: existingCustomers, error: custError } = await dbClient
       .from("customers")
-      .select("id, name, customer_code, gstin, phone, email");
+      .select("id, name, customer_code, gstin, phone, email, opening_balance");
 
     if (custError) {
       console.error("[day-book/import] Failed to fetch customers:", custError);
@@ -120,8 +139,10 @@ export async function POST(request: NextRequest) {
     const customerMapByName = new Map<string, string>();
     const customerMapByCode = new Map<string, string>();
     const customerMapByGstin = new Map<string, string>();
+    const customerOpeningBalMap = new Map<string, number>();
 
     (existingCustomers || []).forEach((c) => {
+      if (c.id) customerOpeningBalMap.set(c.id, Number(c.opening_balance || 0));
       if (c.name) customerMapByName.set(normalizeCustomerName(c.name), c.id);
       if (c.customer_code) customerMapByCode.set(c.customer_code.trim().toLowerCase(), c.id);
       if (c.gstin) customerMapByGstin.set(c.gstin.trim().toLowerCase(), c.id);
@@ -153,19 +174,37 @@ export async function POST(request: NextRequest) {
       raw_data: Json | null;
     }[] = [];
 
-function sanitizeFormula(val: unknown): string | null {
-  if (val === null || val === undefined) return null;
-  const str = String(val).trim();
-  if (!str) return null;
-  // If the value begins with formula characters, prefix with single quote to prevent spreadsheet injection
-  if (/^[=+@\-\t\r]/.test(str)) {
-    return `'${str}`;
-  }
-  return str;
-}
+    function sanitizeFormula(val: unknown): string | null {
+      if (val === null || val === undefined) return null;
+      const str = String(val).trim();
+      if (!str) return null;
+      // If the value begins with formula characters, prefix with single quote to prevent spreadsheet injection
+      if (/^[=+@\-\t\r]/.test(str)) {
+        return `'${str}`;
+      }
+      return str;
+    }
+
+    const SUMMARY_KEYWORDS_PATTERN = /^(total|totals|grand\s*total|sub\s*total|subtotal|closing\s*balance|summary|brought\s*forward|carried\s*forward|b\/f|c\/f|inwards?\s*qty|outwards?\s*qty)$/i;
 
     for (const row of rows) {
-      if (!row || !row.isValid) {
+      if (!row) continue;
+
+      const rawCustName = typeof row.customerName === "string" ? row.customerName.trim() : "";
+      const rawDateStr = typeof row.transactionDate === "string" ? row.transactionDate.trim() : "";
+      const rawValues = row.rawRowData ? Object.values(row.rawRowData).map((v) => String(v ?? "").trim()) : [];
+
+      // If this row is a total/summary footer row, silently skip it without recording an error
+      if (
+        SUMMARY_KEYWORDS_PATTERN.test(rawCustName) ||
+        SUMMARY_KEYWORDS_PATTERN.test(rawDateStr) ||
+        rawValues.some((v) => SUMMARY_KEYWORDS_PATTERN.test(v)) ||
+        (!rawCustName && !row.voucherRef && Number(row.debit || 0) === 0 && Number(row.credit || 0) === 0)
+      ) {
+        continue;
+      }
+
+      if (!row.isValid) {
         importErrorsList.push({
           row_number: row?.rowNumber || 0,
           error_reason: row?.errorReason || "Row validation failed",
@@ -174,7 +213,6 @@ function sanitizeFormula(val: unknown): string | null {
         continue;
       }
 
-      const rawCustName = typeof row.customerName === "string" ? row.customerName.trim() : "";
       if (!rawCustName) {
         importErrorsList.push({
           row_number: row.rowNumber || 0,
@@ -195,6 +233,7 @@ function sanitizeFormula(val: unknown): string | null {
 
       if (!matchedId) {
         if (!newCustomersToInsertMap.has(normName)) {
+          const rowOpBal = Number(row.openingBalance || 0);
           newCustomersToInsertMap.set(normName, {
             name: sanitizeFormula(rawCustName) || rawCustName,
             customer_code: sanitizeFormula(row.customerCode) || null,
@@ -206,7 +245,7 @@ function sanitizeFormula(val: unknown): string | null {
             pincode: sanitizeFormula(row.pincode) || null,
             gstin: sanitizeFormula(row.gstin) || null,
             is_active: true,
-            opening_balance: 0,
+            opening_balance: rowOpBal,
             credit_limit: 0,
           });
         }
@@ -226,7 +265,7 @@ function sanitizeFormula(val: unknown): string | null {
         const { data: createdCusts, error: insertCustErr } = await dbClient
           .from("customers")
           .insert(chunk)
-          .select("id, name, customer_code, gstin");
+          .select("id, name, customer_code, gstin, opening_balance");
 
         if (insertCustErr) {
           console.warn("[day-book/import] Chunk customer insert failed, falling back to row-by-row:", insertCustErr.message);
@@ -236,7 +275,7 @@ function sanitizeFormula(val: unknown): string | null {
             const { data: singleCust, error: singleErr } = await dbClient
               .from("customers")
               .insert(cust)
-              .select("id, name, customer_code, gstin")
+              .select("id, name, customer_code, gstin, opening_balance")
               .single();
 
             if (singleErr) {
@@ -246,7 +285,7 @@ function sanitizeFormula(val: unknown): string | null {
               const { data: retryCust, error: retryErr } = await dbClient
                 .from("customers")
                 .insert(custWithoutGstin)
-                .select("id, name, customer_code")
+                .select("id, name, customer_code, opening_balance")
                 .single();
 
               if (retryErr) {
@@ -259,12 +298,14 @@ function sanitizeFormula(val: unknown): string | null {
               } else if (retryCust) {
                 if (retryCust.name) customerMapByName.set(normalizeCustomerName(retryCust.name), retryCust.id);
                 if (retryCust.customer_code) customerMapByCode.set(retryCust.customer_code.trim().toLowerCase(), retryCust.id);
+                customerOpeningBalMap.set(retryCust.id, Number(retryCust.opening_balance || cust.opening_balance || 0));
                 newCustomersCount++;
               }
             } else if (singleCust) {
               if (singleCust.name) customerMapByName.set(normalizeCustomerName(singleCust.name), singleCust.id);
               if (singleCust.customer_code) customerMapByCode.set(singleCust.customer_code.trim().toLowerCase(), singleCust.id);
               if (singleCust.gstin) customerMapByGstin.set(singleCust.gstin.trim().toLowerCase(), singleCust.id);
+              customerOpeningBalMap.set(singleCust.id, Number(singleCust.opening_balance || cust.opening_balance || 0));
               newCustomersCount++;
             }
           }
@@ -273,6 +314,7 @@ function sanitizeFormula(val: unknown): string | null {
             if (c.name) customerMapByName.set(normalizeCustomerName(c.name), c.id);
             if (c.customer_code) customerMapByCode.set(c.customer_code.trim().toLowerCase(), c.id);
             if (c.gstin) customerMapByGstin.set(c.gstin.trim().toLowerCase(), c.id);
+            customerOpeningBalMap.set(c.id, Number(c.opening_balance || 0));
           });
           newCustomersCount += createdCusts.length;
         }
@@ -305,6 +347,7 @@ function sanitizeFormula(val: unknown): string | null {
     // ── 9. Filter Non-Duplicate Entries for Insertion ────────────────────────
     const entriesToInsert: TablesInsert<"day_book_entries">[] = [];
     const seenBatchHashes = new Set<string>();
+    const customerRunningBalances = new Map<string, number>();
     let duplicateRowsCount = 0;
 
     for (const row of validRowsToProcess) {
@@ -330,11 +373,11 @@ function sanitizeFormula(val: unknown): string | null {
         row.duplicateHash ||
         generateDuplicateHash(
           row.customerName,
-          row.voucherRef,
+          row.voucherType ?? null,
+          row.voucherRef ?? null,
           row.transactionDate,
           row.debit,
-          row.credit,
-          row.particulars
+          row.credit
         );
 
       if (checkDuplicates) {
@@ -346,25 +389,40 @@ function sanitizeFormula(val: unknown): string | null {
 
       seenBatchHashes.add(dupHash);
 
+      // If duplicate checking is disabled, ensure unique hash suffix so Postgres UNIQUE constraint is not violated
+      const finalHash = checkDuplicates
+        ? dupHash
+        : `${dupHash}::force_${batchId.slice(0, 8)}_${row.rowNumber}`;
+
+      // Track running balance starting from customer opening balance
+      if (!customerRunningBalances.has(customerId)) {
+        const initBal = customerOpeningBalMap.get(customerId) ?? Number(row.openingBalance || 0);
+        customerRunningBalances.set(customerId, initBal);
+      }
+      const prevBal = customerRunningBalances.get(customerId) ?? 0;
+      const calculatedEntryBalance = prevBal + Number(row.debit || 0) - Number(row.credit || 0);
+      customerRunningBalances.set(customerId, calculatedEntryBalance);
+
       entriesToInsert.push({
         import_batch_id: batchId,
         customer_id: customerId,
         transaction_date: row.transactionDate,
+        voucher_type: sanitizeFormula(row.voucherType) || null,
         voucher_ref: sanitizeFormula(row.voucherRef) || null,
-        particulars: sanitizeFormula(row.particulars) || null,
-        debit: row.debit,
-        credit: row.credit,
-        balance: row.calculatedBalance,
-        amount: row.amount,
-        transaction_type: row.transactionType,
+        particulars: sanitizeFormula(row.particulars || row.customerName) || null,
+        debit: Number(row.debit || 0),
+        credit: Number(row.credit || 0),
+        balance: calculatedEntryBalance,
+        amount: Number(row.amount || Math.max(row.debit || 0, row.credit || 0)),
+        transaction_type: row.transactionType || (Number(row.debit || 0) > 0 ? "debit" : "credit"),
         source: "excel_import",
-        duplicate_hash: dupHash,
+        duplicate_hash: finalHash,
         raw_row_data: row.rawRowData as unknown as Json,
         created_by: callerUser.id,
       });
     }
 
-    // ── 10. Batch Insert Day Book Entries ────────────────────────────────────
+    // ── 10. Batch Insert Day Book Entries with Graceful Fallback ─────────────
     let successfulRowsCount = 0;
     const entryChunkSize = 200;
 
@@ -376,15 +434,55 @@ function sanitizeFormula(val: unknown): string | null {
         .select("id");
 
       if (insertErr) {
-        console.error("[day-book/import] Error inserting day book chunk:", insertErr);
-        // Record all rows in this chunk as failed
-        chunk.forEach((entry, idx) => {
-          importErrorsList.push({
-            row_number: i + idx + 2,
-            error_reason: insertErr.message,
-            raw_data: (entry.raw_row_data ?? null) as Json | null,
-          });
-        });
+        console.warn("[day-book/import] Chunk insert failed, falling back to row-by-row:", insertErr.message);
+
+        // Fall back to row-by-row insertion
+        for (let idx = 0; idx < chunk.length; idx++) {
+          const entry = chunk[idx];
+          const { data: singleInsert, error: singleErr } = await dbClient
+            .from("day_book_entries")
+            .insert(entry)
+            .select("id")
+            .single();
+
+          if (singleErr) {
+            const isUniqueViolation =
+              singleErr.message.includes("unique constraint") ||
+              singleErr.message.includes("duplicate_hash") ||
+              singleErr.code === "23505";
+
+            if (isUniqueViolation && checkDuplicates) {
+              // Gracefully treat un-queried duplicate as duplicate skipped
+              duplicateRowsCount++;
+            } else if (isUniqueViolation && !checkDuplicates) {
+              // User specifically disabled duplicate checking: retry with unique timestamp suffix
+              const retryHash = `${entry.duplicate_hash || "entry"}::retry_${Date.now()}_${idx}`;
+              const { data: retryInsert, error: retryErr } = await dbClient
+                .from("day_book_entries")
+                .insert({ ...entry, duplicate_hash: retryHash })
+                .select("id")
+                .single();
+
+              if (retryErr) {
+                importErrorsList.push({
+                  row_number: i + idx + 2,
+                  error_reason: retryErr.message,
+                  raw_data: (entry.raw_row_data ?? null) as Json | null,
+                });
+              } else if (retryInsert) {
+                successfulRowsCount++;
+              }
+            } else {
+              importErrorsList.push({
+                row_number: i + idx + 2,
+                error_reason: singleErr.message,
+                raw_data: (entry.raw_row_data ?? null) as Json | null,
+              });
+            }
+          } else if (singleInsert) {
+            successfulRowsCount++;
+          }
+        }
       } else if (inserted) {
         successfulRowsCount += inserted.length;
       }

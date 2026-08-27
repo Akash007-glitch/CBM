@@ -21,6 +21,7 @@ import {
 import {
   parseExcelFile,
   transformRowsWithMappings,
+  normalizeCustomerName,
   ERP_FIELD_DEFINITIONS,
   type ColumnMapping,
   type ParseExcelResult,
@@ -28,6 +29,7 @@ import {
 } from "@/lib/utils/excelParser";
 import { importDayBook, type ImportDayBookResponse } from "@/lib/services/dayBookService";
 import { useDashboardStore } from "@/store/dashboardStore";
+import { Spinner } from "@/components/ui/Spinner";
 
 interface ImportDayBookModalProps {
   isOpen: boolean;
@@ -36,6 +38,18 @@ interface ImportDayBookModalProps {
 
 export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, onClose }) => {
   const refreshStore = useDashboardStore((s) => s.refresh);
+  const existingCustomers = useDashboardStore((s) => s.customers);
+
+  // Helper to build customer balances map for running balance calculation
+  const getCustomerBalancesMap = React.useCallback(() => {
+    const map = new Map<string, number>();
+    (existingCustomers || []).forEach((c) => {
+      if (c.name) {
+        map.set(normalizeCustomerName(c.name), Number(c.opening_balance || 0));
+      }
+    });
+    return map;
+  }, [existingCustomers]);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [targetAccount, setTargetAccount] = useState("day_book");
@@ -45,7 +59,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
   const [isProcessing, setIsProcessing] = useState(false);
   const [parseError, setParseError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [activePreviewTab, setActivePreviewTab] = useState<"mapping" | "rows">("rows");
+  const [activePreviewTab, setActivePreviewTab] = useState<"rows" | "mapping">("rows");
 
   // Parsed state
   const [parseResult, setParseResult] = useState<ParseExcelResult | null>(null);
@@ -107,7 +121,8 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
     setImportResult(null);
 
     try {
-      const result = await parseExcelFile(file);
+      const custBalancesMap = getCustomerBalancesMap();
+      const result = await parseExcelFile(file, custBalancesMap);
       setParseResult(result);
       setMappings(result.mappings);
 
@@ -142,11 +157,13 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
     setMappings(updatedMappings);
 
     if (parseResult && rawRows.length > 0) {
+      const custBalancesMap = getCustomerBalancesMap();
       const recomputed = transformRowsWithMappings(
         parseResult.sheetName,
         parseResult.headers,
         rawRows,
-        updatedMappings
+        updatedMappings,
+        custBalancesMap
       );
       setParseResult(recomputed);
     }
@@ -233,16 +250,38 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
           {/* ── STAGE 1: POST-IMPORT SUCCESS REPORT ── */}
           {importResult ? (
             <div className="space-y-6 animate-in fade-in zoom-in-95 duration-200">
-              <div className="text-center py-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl p-6">
-                <div className="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <CheckCircle2 className="w-8 h-8" />
+              <div
+                className={`text-center py-4 rounded-2xl p-6 border ${
+                  importResult.status === "completed"
+                    ? "bg-emerald-50/70 border-emerald-200"
+                    : importResult.status === "completed_with_errors"
+                    ? "bg-amber-50/70 border-amber-200"
+                    : "bg-red-50/70 border-red-200"
+                }`}
+              >
+                <div
+                  className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 ${
+                    importResult.status === "completed"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : importResult.status === "completed_with_errors"
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {importResult.status === "completed" ? (
+                    <CheckCircle2 className="w-8 h-8" />
+                  ) : importResult.status === "completed_with_errors" ? (
+                    <AlertTriangle className="w-8 h-8" />
+                  ) : (
+                    <FileWarning className="w-8 h-8" />
+                  )}
                 </div>
                 <h3 className="text-lg font-bold text-[#0B1C30]">
                   {importResult.status === "completed"
                     ? "Day Book Import Complete!"
                     : importResult.status === "completed_with_errors"
-                      ? "Import Finished with Some Errors"
-                      : "Import Failed"}
+                    ? "Import Finished with Some Errors"
+                    : "Import Failed"}
                 </h3>
                 <p className="text-xs text-[#3E4947] mt-1 font-medium">
                   File: <span className="font-bold text-[#0B1C30]">{importResult.fileName}</span> &bull; Batch ID: {importResult.batchId.slice(0, 8)}
@@ -358,7 +397,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
 
                 <div className="w-11 h-11 rounded-full bg-[#E5EEFF] flex items-center justify-center text-teal-brand mb-2 group-hover:scale-105 transition-transform shadow-xs">
                   {isParsing ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Spinner className="w-5 h-5 text-teal-brand" />
                   ) : (
                     <UploadCloud className="w-5 h-5 stroke-[2.2]" />
                   )}
@@ -393,15 +432,13 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                       Drag and Drop or Browse Day Book File (.xlsx or .csv)
                     </p>
                     <p className="text-xs text-[#6E7977] mt-1 font-medium">
-                      Supports standard Day Book files with Debit, Credit, and Running Balance columns
+                      Supports real Day Book reports (Date, Particulars, Vch Type, Vch No., Debit Amount, Credit Amount)
                     </p>
                   </>
                 )}
               </div>
 
               {/* IMPORT SETTINGS */}
-
-
               <div className="flex items-center gap-3 pb-2 sm:pb-2.5">
                 <button
                   type="button"
@@ -418,10 +455,9 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                   className="text-xs font-medium text-[#3E4947] select-none cursor-pointer"
                   onClick={() => setCheckDuplicates(!checkDuplicates)}
                 >
-                  Check for duplicate entries
+                  Check for duplicate entries (auto-skip existing transactions)
                 </span>
               </div>
-
 
               {/* DATA MAPPING & PREVIEW (ONLY WHEN FILE IS LOADED) */}
               {parseResult && (
@@ -431,10 +467,10 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[#0B1C30] flex items-center gap-1.5">
                         <Info className="w-4 h-4 text-[#0051D5]" />
-                        Import Validation Preview
+                        Day Book Data Preview
                       </span>
                       <span className="text-[11px] font-semibold text-[#6E7977]">
-                        Sheet: {parseResult.sheetName}
+                        Sheet: {parseResult.sheetName} &bull; {parseResult.validCount} valid entries
                       </span>
                     </div>
 
@@ -444,20 +480,28 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                         <p className="text-base font-bold text-[#0B1C30]">{parseResult.totalRows}</p>
                       </div>
                       <div className="bg-white p-2.5 rounded-lg border border-[#E2E8F0] text-center">
-                        <span className="text-[10px] uppercase font-bold text-emerald-700">Valid Rows</span>
-                        <p className="text-base font-bold text-emerald-700">{parseResult.validCount}</p>
-                      </div>
-                      <div className="bg-white p-2.5 rounded-lg border border-[#E2E8F0] text-center">
                         <span className="text-[10px] uppercase font-bold text-[#0051D5]">Parties</span>
                         <p className="text-base font-bold text-[#0051D5]">{parseResult.uniqueCustomers.length}</p>
                       </div>
-                      <div className="bg-white p-2.5 rounded-lg border border-[#E2E8F0] text-center">
-                        <span className="text-[10px] uppercase font-bold text-[#D97706]">Mismatch</span>
-                        <p className="text-base font-bold text-[#D97706]">{parseResult.balanceMismatchCount}</p>
+                      <div className="bg-white p-2.5 rounded-lg border border-emerald-100 bg-emerald-50/30 text-center">
+                        <span className="text-[10px] uppercase font-bold text-emerald-800">Total Debit (+)</span>
+                        <p className="text-sm font-bold text-emerald-700 font-mono">
+                          {formatINR(parseResult.allRows.reduce((sum, r) => sum + (r.debit || 0), 0))}
+                        </p>
+                      </div>
+                      <div className="bg-white p-2.5 rounded-lg border border-amber-100 bg-amber-50/30 text-center">
+                        <span className="text-[10px] uppercase font-bold text-amber-900">Total Credit (&minus;)</span>
+                        <p className="text-sm font-bold text-amber-800 font-mono">
+                          {formatINR(parseResult.allRows.reduce((sum, r) => sum + (r.credit || 0), 0))}
+                        </p>
                       </div>
                       <div className="bg-white p-2.5 rounded-lg border border-[#E2E8F0] text-center">
-                        <span className="text-[10px] uppercase font-bold text-red-600">Errors</span>
-                        <p className="text-base font-bold text-red-600">{parseResult.errorCount}</p>
+                        <span className={`text-[10px] uppercase font-bold ${parseResult.errorCount > 0 ? "text-red-600" : "text-slate-400"}`}>
+                          Errors
+                        </span>
+                        <p className={`text-base font-bold ${parseResult.errorCount > 0 ? "text-red-600" : "text-slate-400"}`}>
+                          {parseResult.errorCount}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -475,7 +519,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                             }`}
                         >
                           <Table className="w-3.5 h-3.5" />
-                          <span>Rows &amp; Balance Preview</span>
+                          <span>Day Book Transactions ({parseResult.totalRows})</span>
                         </button>
                         <button
                           type="button"
@@ -501,51 +545,49 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                       )}
                     </div>
 
-                    {/* TAB 1: ROW & RUNNING BALANCE PREVIEW */}
+                    {/* TAB 1: REAL DAY BOOK ROW PREVIEW */}
                     {activePreviewTab === "rows" && (
                       <div className="border border-[#E2E8F0] rounded-xl overflow-hidden bg-white shadow-2xs">
-                        <div className="max-h-56 overflow-y-auto">
+                        <div className="max-h-60 overflow-y-auto">
                           <table className="w-full text-left text-xs border-collapse">
-                            <thead className="bg-[#EEF5FF] text-[#4A5568] border-b border-[#E2E8F0] sticky top-0 z-10">
+                            <thead className="bg-[#EEF5FF] text-[#4A5568] border-b border-[#E2E8F0] sticky top-0 z-10 font-semibold">
                               <tr>
-                                <th className="py-2.5 px-3 font-semibold">Ref #</th>
-                                <th className="py-2.5 px-3 font-semibold">Party Name</th>
-                                <th className="py-2.5 px-3 font-semibold text-right">Debit (+)</th>
-                                <th className="py-2.5 px-3 font-semibold text-right">Credit (-)</th>
-                                <th className="py-2.5 px-3 font-semibold text-right">Calc. Balance</th>
-                                <th className="py-2.5 px-3 font-semibold text-right">Excel Balance</th>
-                                <th className="py-2.5 px-3 font-semibold text-center">Status</th>
+                                <th className="py-2.5 px-3">Date</th>
+                                <th className="py-2.5 px-3">Customer / Particulars</th>
+                                <th className="py-2.5 px-2.5">Vch Type</th>
+                                <th className="py-2.5 px-2.5">Vch No.</th>
+                                <th className="py-2.5 px-3 text-right">Debit Amount (+)</th>
+                                <th className="py-2.5 px-3 text-right">Credit Amount (&minus;)</th>
+                                <th className="py-2.5 px-3 text-center">Status</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-[#E2E8F0]">
-                              {parseResult.allRows.slice(0, 20).map((row, idx) => (
+                              {parseResult.allRows.slice(0, 30).map((row, idx) => (
                                 <tr key={idx} className="hover:bg-[#F8FAFC] transition-colors">
-                                  <td className="py-2.5 px-3 font-mono font-medium text-[#0B1C30]">
-                                    {row.voucherRef || `Row ${row.rowNumber}`}
+                                  <td className="py-2.5 px-3 font-mono font-medium text-[#0B1C30] whitespace-nowrap">
+                                    {row.transactionDate}
                                   </td>
-                                  <td className="py-2.5 px-3 font-medium text-[#0B1C30] max-w-35 truncate">
+                                  <td className="py-2.5 px-3 font-bold text-[#0B1C30] max-w-45 truncate" title={row.customerName}>
                                     {row.customerName}
                                   </td>
-                                  <td className="py-2.5 px-3 text-right font-medium text-emerald-700">
+                                  <td className="py-2.5 px-2.5">
+                                    <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-bold uppercase text-slate-700">
+                                      {row.voucherType || "Sales"}
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 px-2.5 font-mono font-semibold text-[#0B1C30]">
+                                    {row.voucherRef || "—"}
+                                  </td>
+                                  <td className="py-2.5 px-3 text-right font-mono font-semibold text-emerald-700">
                                     {row.debit > 0 ? formatINR(row.debit) : "₹0.00"}
                                   </td>
-                                  <td className="py-2.5 px-3 text-right font-medium text-[#BA1A1A]">
+                                  <td className="py-2.5 px-3 text-right font-mono font-semibold text-amber-800">
                                     {row.credit > 0 ? formatINR(row.credit) : "₹0.00"}
-                                  </td>
-                                  <td className="py-2.5 px-3 text-right font-bold text-[#0B1C30]">
-                                    {formatINR(row.calculatedBalance)}
-                                  </td>
-                                  <td className="py-2.5 px-3 text-right font-medium text-[#6E7977]">
-                                    {row.excelBalance !== null ? formatINR(row.excelBalance) : "—"}
                                   </td>
                                   <td className="py-2.5 px-3 text-center">
                                     {row.isValid ? (
                                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
                                         <Check className="w-3 h-3" /> Valid
-                                      </span>
-                                    ) : !row.isBalanceMatched ? (
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800" title={row.errorReason}>
-                                        <AlertTriangle className="w-3 h-3" /> Mismatch
                                       </span>
                                     ) : (
                                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800" title={row.errorReason}>
@@ -558,9 +600,9 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                             </tbody>
                           </table>
                         </div>
-                        {parseResult.allRows.length > 20 && (
+                        {parseResult.allRows.length > 30 && (
                           <div className="py-2 px-3 bg-slate-50 text-[11px] text-center text-[#6E7977] border-t border-[#E2E8F0]">
-                            Showing first 20 of {parseResult.allRows.length} rows
+                            Showing first 30 of {parseResult.allRows.length} transactions
                           </div>
                         )}
                       </div>
@@ -670,7 +712,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
               >
                 {isProcessing ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Spinner className="w-4 h-4 text-white" />
                     <span>Processing Import...</span>
                   </>
                 ) : (

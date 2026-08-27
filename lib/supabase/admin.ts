@@ -14,10 +14,15 @@ export function createAdminSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !serviceKey) {
+  if (
+    !url ||
+    !serviceKey ||
+    serviceKey.includes("your-service-role-key") ||
+    serviceKey === "your-service-role-key-here" ||
+    serviceKey.trim().length < 20
+  ) {
     throw new Error(
-      "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars. " +
-        "Add SUPABASE_SERVICE_ROLE_KEY to .env (not NEXT_PUBLIC — server-only)."
+      "Missing or unconfigured SUPABASE_SERVICE_ROLE_KEY env var."
     );
   }
 

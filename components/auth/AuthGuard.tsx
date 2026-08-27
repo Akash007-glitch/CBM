@@ -80,7 +80,7 @@ function AuthSpinner() {
       aria-label="Loading"
       className="min-h-screen flex items-center justify-center bg-[#F4F7FA]"
     >
-      <div className="h-10 w-10 rounded-full border-4 border-slate-200 border-t-teal-600 animate-spin" />
+      <div className="h-10 w-10 rounded-full border-4 border-slate-200 border-t-teal-brand animate-spin" />
     </div>
   );
 }

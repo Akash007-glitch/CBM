@@ -11,7 +11,7 @@ export const BrandHeader: React.FC = () => {
           <Lock className="w-2.5 h-2.5 text-white absolute center stroke-3" />
         </div>
         <h1 className="text-[26px] font-bold text-slate-900 tracking-tight font-sans">
-          Shubh Enterprise
+          Subh Enterprise
         </h1>
       </div>
 
