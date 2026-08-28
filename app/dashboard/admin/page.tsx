@@ -7,6 +7,7 @@ import { ERPAdminDashboard } from "@/components/dashboard/ERPAdminDashboard";
 import {
   AddCustomerModal,
   QuickAddModal,
+  AdminLogPaymentModal,
   CustomersView,
   SalesmenView,
   CollectionsView,
@@ -17,6 +18,7 @@ export default function AdminDashboardPage() {
   const [activePage, setActivePage] = useState("dashboard");
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [isLogPaymentOpen, setIsLogPaymentOpen] = useState(false);
 
   return (
     <AuthGuard requireAuth requiredRole="admin">
@@ -25,11 +27,13 @@ export default function AdminDashboardPage() {
         onNavigate={setActivePage}
         onOpenQuickAdd={() => setIsQuickAddOpen(true)}
         onOpenAddCustomer={() => setIsAddCustomerOpen(true)}
+        onOpenLogPayment={() => setIsLogPaymentOpen(true)}
       >
         {activePage === "dashboard" && (
           <ERPAdminDashboard
             onOpenAddCustomer={() => setIsAddCustomerOpen(true)}
             onOpenQuickAdd={() => setIsQuickAddOpen(true)}
+            onOpenLogPayment={() => setIsLogPaymentOpen(true)}
           />
         )}
 
@@ -40,7 +44,10 @@ export default function AdminDashboardPage() {
         {activePage === "salesmen" && <SalesmenView />}
 
         {activePage === "collections" && (
-          <CollectionsView onOpenQuickAdd={() => setIsQuickAddOpen(true)} />
+          <CollectionsView
+            onOpenLogPayment={() => setIsLogPaymentOpen(true)}
+            onOpenQuickAdd={() => setIsQuickAddOpen(true)}
+          />
         )}
 
         {activePage === "outstanding" && <OutstandingView />}
@@ -56,6 +63,12 @@ export default function AdminDashboardPage() {
         isOpen={isQuickAddOpen}
         onClose={() => setIsQuickAddOpen(false)}
       />
+
+      <AdminLogPaymentModal
+        isOpen={isLogPaymentOpen}
+        onClose={() => setIsLogPaymentOpen(false)}
+      />
     </AuthGuard>
   );
 }
+

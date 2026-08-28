@@ -31,6 +31,7 @@ interface DashboardShellProps {
   onNavigate: (id: string) => void;
   onOpenQuickAdd?: () => void;
   onOpenAddCustomer?: () => void;
+  onOpenLogPayment?: () => void;
   navItems?: NavItem[];
   brandColor?: string;
   roleBadgeClass?: string;
@@ -50,6 +51,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   activePage,
   onNavigate,
   onOpenQuickAdd,
+  onOpenLogPayment,
   navItems,
   roleLabel = "Admin",
 }) => {

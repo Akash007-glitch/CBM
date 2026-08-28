@@ -20,13 +20,15 @@ import { createProxySupabaseClient } from "@/lib/supabase/proxy-client";
 
 // ── Route definitions ─────────────────────────────────────────────────────────
 
-const PROTECTED_PREFIXES = ["/dashboard", "/customers", "/sales", "/reports"];
+const LOGIN_PATHS = ["/", "/dashboard/admin/login", "/dashboard/salesman/login"];
+
+const PUBLIC_AUTH_PREFIXES = ["/auth/"];
+
+const PROTECTED_PREFIXES = ["/dashboard", "/customers", "/sales", "/reports", "/api/admin"];
 
 const ADMIN_ONLY_PREFIXES = ["/dashboard/admin", "/api/admin"];
 
 const SALESMAN_ONLY_PREFIXES = ["/dashboard/salesman"];
-
-const LOGIN_PATHS = ["/", "/dashboard/admin/login", "/dashboard/salesman/login"];
 
 const ROLE_DASHBOARD: Record<string, string> = {
   admin: "/dashboard/admin",
@@ -73,6 +75,7 @@ async function getUserRole(
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const isApiRoute = pathname.startsWith("/api/");
 
   // Create Supabase client that can read/refresh the session from cookies.
   const { supabase, response } = createProxySupabaseClient(request);
@@ -82,17 +85,43 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isProtectedRoute = PROTECTED_PREFIXES.some((p) =>
-    pathname.startsWith(p)
-  );
-  const isAdminOnly = ADMIN_ONLY_PREFIXES.some((p) => pathname.startsWith(p));
-  const isSalesmanOnly = SALESMAN_ONLY_PREFIXES.some((p) =>
-    pathname.startsWith(p)
-  );
   const isLoginPage = LOGIN_PATHS.includes(pathname);
+  const isPublicAuthRoute = PUBLIC_AUTH_PREFIXES.some((p) => pathname.startsWith(p));
 
-  // ── Rule 1: Protected route, not logged in → login page ──────────────────────
+  // ── Public login & auth routes for unauthenticated users ────────────────────
+  if (!user && (isLoginPage || isPublicAuthRoute)) {
+    return response;
+  }
+
+  // ── Rule 4: Login page visited by an already logged-in user ──────────────────
+  if (user && isLoginPage) {
+    const role = await getUserRole(supabase, user);
+    const destination = (role && ROLE_DASHBOARD[role]) ?? DEFAULT_DASHBOARD;
+    return redirectTo(destination, request);
+  }
+
+  // Evaluate protected & role-scoped routes (excluding login pages)
+  const isProtectedRoute =
+    !isLoginPage &&
+    !isPublicAuthRoute &&
+    PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
+
+  const isAdminOnly =
+    !isLoginPage &&
+    ADMIN_ONLY_PREFIXES.some((p) => pathname.startsWith(p));
+
+  const isSalesmanOnly =
+    !isLoginPage &&
+    SALESMAN_ONLY_PREFIXES.some((p) => pathname.startsWith(p));
+
+  // ── Rule 1: Protected route, not logged in ──────────────────────────────────
   if (isProtectedRoute && !user) {
+    if (isApiRoute) {
+      return NextResponse.json(
+        { error: "Unauthorized: Authentication required." },
+        { status: 401 }
+      );
+    }
     return redirectTo(loginPathFor(pathname), request);
   }
 
@@ -102,20 +131,25 @@ export async function middleware(request: NextRequest) {
 
     // ── Rule 2: Admin-only route, non-admin user ──────────────────────────────
     if (isAdminOnly && role !== "admin") {
+      if (isApiRoute) {
+        return NextResponse.json(
+          { error: "Forbidden: Administrator privileges required." },
+          { status: 403 }
+        );
+      }
       return redirectTo(ROLE_DASHBOARD["salesman"], request);
     }
 
     // ── Rule 3: Salesman-only route, admin user ───────────────────────────────
     if (isSalesmanOnly && role === "admin") {
+      if (isApiRoute) {
+        return NextResponse.json(
+          { error: "Forbidden: Salesman route accessed by admin." },
+          { status: 403 }
+        );
+      }
       return redirectTo(ROLE_DASHBOARD["admin"], request);
     }
-  }
-
-  // ── Rule 4: Login page visited by a logged-in user ───────────────────────────
-  if (isLoginPage && user) {
-    const role = await getUserRole(supabase, user);
-    const destination = (role && ROLE_DASHBOARD[role]) ?? DEFAULT_DASHBOARD;
-    return redirectTo(destination, request);
   }
 
   // ── Default: allow the request through, forwarding any refreshed cookies ─────

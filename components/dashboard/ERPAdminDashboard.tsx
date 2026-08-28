@@ -17,10 +17,13 @@ import { useDashboardStore, useRealtimeMetrics } from "@/store/dashboardStore";
 interface ERPAdminDashboardProps {
   onOpenAddCustomer: () => void;
   onOpenQuickAdd?: () => void;
+  onOpenLogPayment?: () => void;
 }
 
 export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
   onOpenAddCustomer,
+  onOpenQuickAdd,
+  onOpenLogPayment,
 }) => {
   const {
     todaySales,
@@ -122,6 +125,17 @@ export const ERPAdminDashboard: React.FC<ERPAdminDashboardProps> = ({
             <Plus className="w-4 h-4 text-teal-brand" />
             <span>Add Customer</span>
           </button>
+
+          {/* Log Payment Button */}
+          {onOpenLogPayment && (
+            <button
+              onClick={onOpenLogPayment}
+              className="bg-teal-brand text-white px-4 h-10 rounded-lg text-sm font-semibold hover:bg-teal-brand/90 transition-colors shadow-xs flex items-center gap-2 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Log Payment</span>
+            </button>
+          )}
         </div>
       </div>
 

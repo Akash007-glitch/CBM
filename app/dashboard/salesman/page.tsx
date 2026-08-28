@@ -276,16 +276,18 @@ export default function SalesmanDashboardPage() {
     }
   };
 
-  // Filtered customer list
-  const filteredCustomers = customers.filter((cust) => {
-    const q = searchQuery.toLowerCase();
-    return (
-      cust.name.toLowerCase().includes(q) ||
-      (cust.city && cust.city.toLowerCase().includes(q)) ||
-      (cust.customer_code && cust.customer_code.toLowerCase().includes(q)) ||
-      (cust.phone && cust.phone.includes(q))
-    );
-  });
+  // Filtered customer list (exclude CASH ledger account)
+  const filteredCustomers = customers
+    .filter((cust) => cust.name.trim().toUpperCase() !== "CASH")
+    .filter((cust) => {
+      const q = searchQuery.toLowerCase();
+      return (
+        cust.name.toLowerCase().includes(q) ||
+        (cust.city && cust.city.toLowerCase().includes(q)) ||
+        (cust.customer_code && cust.customer_code.toLowerCase().includes(q)) ||
+        (cust.phone && cust.phone.includes(q))
+      );
+    });
 
   // Calculate deductions & new balance
   const damageNum = parseFloat(damageDeduction) || 0;

@@ -352,8 +352,24 @@ export const AddCustomerModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
 
 import { ImportDayBookModal } from "@/components/dashboard/ImportDayBookModal";
 import { CustomerFinancialInspector } from "@/components/dashboard/CustomerFinancialInspector";
+import { AdminLogPaymentModal } from "@/components/dashboard/AdminLogPaymentModal";
+import { getPaymentAllocations, type AllocationRow } from "@/lib/services/paymentService";
+import {
+  Wallet,
+  CreditCard,
+  Printer,
+  Copy,
+  Check,
+  Receipt,
+  Filter,
+  Calendar,
+  TrendingUp,
+  Banknote,
+  FileText,
+  ExternalLink,
+} from "lucide-react";
 
-export { ImportDayBookModal, CustomerFinancialInspector };
+export { ImportDayBookModal, CustomerFinancialInspector, AdminLogPaymentModal };
 export const QuickAddModal: React.FC<ModalProps> = (props) => <ImportDayBookModal {...props} />;
 
 // ── Sub-Pages Views ───────────────────────────────────────────────────────────
@@ -499,120 +515,112 @@ export const CustomersView: React.FC<{ onOpenAddCustomer: () => void }> = ({ onO
                 value={tableSearch}
                 onChange={(e) => setTableSearch(e.target.value)}
                 placeholder="Search directory..."
-                className="w-full h-9 pl-9 pr-3 text-xs bg-white border border-[#CBD5E1] rounded-lg text-[#0B1C30] outline-none focus:border-teal-brand focus:ring-1 focus:ring-teal-brand font-medium placeholder:text-slate-400"
+                className="w-full h-9 pl-9 pr-3 text-xs bg-white border border-[#BDC9C6] rounded-lg text-[#0B1C30] placeholder-slate-400 focus:outline-none focus:border-teal-brand"
               />
             </div>
 
+            {/* Add Customer Trigger */}
             <button
               onClick={onOpenAddCustomer}
-              className="flex items-center gap-1.5 px-3.5 h-9 bg-teal-brand text-white text-xs font-semibold rounded-lg shadow-xs hover:bg-teal-brand/90 cursor-pointer shrink-0"
+              className="bg-teal-brand text-white px-3.5 h-9 rounded-lg text-xs font-semibold hover:bg-teal-brand/90 transition-colors shadow-2xs flex items-center gap-1.5 shrink-0 cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" /> New Customer
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Customer</span>
             </button>
           </div>
         </div>
 
+        {/* Financial Table */}
         <div className="bg-white rounded-[14px] border border-[#E2E8F0] overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#F8F9FF] border-b border-[#E2E8F0] text-[#3E4947] font-semibold uppercase tracking-wider text-[11px]">
+              <thead className="bg-[#F8F9FF] border-b border-[#E2E8F0] text-[#3E4947] font-semibold uppercase tracking-wider">
                 <tr>
-                  <th className="py-3.5 px-4">Customer</th>
-                  <th className="py-3.5 px-4">Contact &amp; Location</th>
-                  <th className="py-3.5 px-4 text-right">Op. Balance</th>
-                  <th className="py-3.5 px-4 text-right">Total Debit (+)</th>
-                  <th className="py-3.5 px-4 text-right">Total Credit (&minus;)</th>
-                  <th className="py-3.5 px-4 text-right">Total Balance</th>
-                  <th className="py-3.5 px-4 text-center">Status</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
+                  <th className="p-3.5">Customer Name</th>
+                  <th className="p-3.5">Code</th>
+                  <th className="p-3.5">City</th>
+                  <th className="p-3.5 text-right">Opening Bal</th>
+                  <th className="p-3.5 text-right text-rose-600">Total Debits</th>
+                  <th className="p-3.5 text-right text-emerald-600">Total Credits</th>
+                  <th className="p-3.5 text-right">Net Balance</th>
+                  <th className="p-3.5 text-center">Status</th>
+                  <th className="p-3.5 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E2E8F0]">
                 {filteredCustomers.map((c) => {
                   const summary = summaryMap.get(c.id);
-                  const opBal = Number(c.opening_balance || 0);
-                  const totDebit = summary ? summary.total_debit : 0;
-                  const totCredit = summary ? summary.total_credit : 0;
-                  const totBalance = summary ? summary.total_balance : opBal;
+                  const opening = summary ? summary.opening_balance : Number(c.opening_balance || 0);
+                  const debits = summary ? summary.total_debit : 0;
+                  const credits = summary ? summary.total_credit : 0;
+                  const netBalance = summary ? summary.total_balance : opening;
 
                   return (
                     <tr
                       key={c.id}
                       onClick={() => handleInspectCustomer(c.id)}
-                      className="hover:bg-[#F8F9FF] transition-colors cursor-pointer group"
+                      className={`hover:bg-[#F0F5FF] cursor-pointer transition-colors ${
+                        selectedCustomerIdForInspector === c.id ? "bg-[#EFF4FF] font-medium" : ""
+                      }`}
                     >
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-[#0B1C30] group-hover:text-teal-brand transition-colors flex items-center gap-1.5">
-                          <span>{c.name}</span>
-                          {c.customer_code && (
-                            <span className="text-[10px] font-mono font-normal px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
-                              {c.customer_code}
-                            </span>
-                          )}
-                        </div>
+                      <td className="p-3.5 font-bold text-[#0B1C30] flex items-center gap-2">
+                        <span>{c.name}</span>
+                        {selectedCustomerIdForInspector === c.id && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-teal-brand shrink-0 animate-pulse" />
+                        )}
                       </td>
-                      <td className="py-3 px-4 text-[#3E4947]">
-                        <span className="text-[11px] block">{c.city ?? "—"}</span>
-                        <span className="text-[10px] text-[#6E7977]">{c.phone || c.email || "—"}</span>
+                      <td className="p-3.5 font-mono text-slate-500">{c.customer_code || "—"}</td>
+                      <td className="p-3.5 text-[#3E4947]">{c.city || "—"}</td>
+                      <td className="p-3.5 text-right font-mono text-slate-600">
+                        ₹{opening.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono font-medium text-slate-600">
-                        ₹{opBal.toLocaleString("en-IN")}
+                      <td className="p-3.5 text-right font-mono font-medium text-rose-600">
+                        ₹{debits.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono font-semibold text-emerald-700">
-                        {totDebit > 0 ? `+₹${totDebit.toLocaleString("en-IN")}` : "₹0.00"}
+                      <td className="p-3.5 text-right font-mono font-medium text-emerald-600">
+                        ₹{credits.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono font-semibold text-amber-800">
-                        {totCredit > 0 ? `-₹${totCredit.toLocaleString("en-IN")}` : "₹0.00"}
+                      <td className="p-3.5 text-right font-mono font-bold">
+                        <span className={netBalance > 0 ? "text-rose-700" : "text-emerald-700"}>
+                          ₹{netBalance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                        </span>
                       </td>
-                      <td className="py-3 px-4 text-right font-mono font-bold text-[#0B1C30]">
-                        ₹{totBalance.toLocaleString("en-IN")}
-                      </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="p-3.5 text-center">
                         <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            c.is_active ? "bg-teal-brand/10 text-teal-brand" : "bg-gray-100 text-gray-500"
+                          className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            c.is_active
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : "bg-slate-100 text-slate-500 border border-slate-200"
                           }`}
                         >
                           {c.is_active ? "Active" : "Inactive"}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="p-3.5 text-center">
+                        <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                           <button
-                            type="button"
                             onClick={() => handleInspectCustomer(c.id)}
-                            className="p-1.5 rounded-lg text-teal-brand bg-teal-brand/10 hover:bg-teal-brand hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1 text-[11px] font-bold"
-                            title="Inspect Financials & Ledger"
+                            title="Inspect Financial Ledger"
+                            className="p-1 text-teal-brand hover:bg-[#E5EEFF] rounded transition-colors"
                           >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Inspect</span>
+                            <Eye className="w-4 h-4" />
                           </button>
-
                           <button
-                            type="button"
-                            onClick={() => {
-                              setCustomerToDelete(c);
-                              setDeleteError(null);
-                              setCanFallbackDeactivate(false);
-                            }}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer inline-flex items-center gap-1 text-[11px] font-semibold"
-                            title="Remove customer"
-                            aria-label={`Remove customer ${c.name}`}
+                            onClick={() => setCustomerToDelete(c)}
+                            title="Delete Customer"
+                            className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
                     </tr>
                   );
                 })}
-
                 {filteredCustomers.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-slate-500 font-medium">
-                      {customers.length === 0
-                        ? "No customers found. Click \"New Customer\" above to add one."
-                        : `No customers match "${tableSearch}".`}
+                    <td colSpan={9} className="p-8 text-center text-slate-500">
+                      No customers found matching your search.
                     </td>
                   </tr>
                 )}
@@ -622,104 +630,83 @@ export const CustomersView: React.FC<{ onOpenAddCustomer: () => void }> = ({ onO
         </div>
       </div>
 
-      {/* Delete / Remove Customer Confirmation Modal */}
+      {/* ── 3. DELETE / DEACTIVATE CONFIRMATION MODAL ── */}
       {customerToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1C30]/50 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-[#E2E8F0] p-6 space-y-5 animate-in zoom-in-95 duration-200">
-            {/* Header */}
-            <div className="flex items-start gap-4">
-              <div className="w-11 h-11 rounded-xl bg-red-100 flex items-center justify-center text-red-600 shrink-0">
-                <Trash2 className="w-6 h-6" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200 p-5 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-rose-600 pb-2 border-b border-slate-100">
+              <div className="p-2 bg-rose-50 rounded-xl">
+                <AlertTriangle className="w-5 h-5" />
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-bold text-[#0B1C30]">Remove Customer</h3>
-                <p className="text-xs text-[#6E7977] mt-0.5">
-                  Are you sure you want to remove <strong className="text-[#0B1C30]">{customerToDelete.name}</strong>?
-                </p>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Remove Customer Account</h3>
+                <p className="text-xs text-slate-500">Confirm deletion or deactivation</p>
               </div>
-              <button
-                onClick={() => {
-                  setCustomerToDelete(null);
-                  setDeleteError(null);
-                }}
-                disabled={isProcessing}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
             </div>
 
-            {/* Error / Conflict Alert */}
             {deleteError && (
-              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-2">
-                <div className="flex items-center gap-2 font-bold text-amber-800">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>Notice</span>
+              <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs space-y-1.5">
+                <div className="font-bold flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Cannot Delete Permanently</span>
                 </div>
                 <p>{deleteError}</p>
                 {canFallbackDeactivate && (
-                  <p className="font-semibold text-amber-950">
-                    Tip: You can deactivate this customer instead so they no longer appear as an active account while preserving past ledger and invoice history.
+                  <p className="font-medium text-slate-700 pt-1">
+                    Would you like to <strong>deactivate</strong> this customer instead? Their records will be preserved for financial auditing.
                   </p>
                 )}
               </div>
             )}
 
-            {/* Customer Details Box */}
-            <div className="bg-[#F8F9FF] rounded-xl p-3.5 border border-[#E2E8F0] text-xs space-y-1.5">
-              <div className="flex justify-between">
-                <span className="text-[#6E7977]">Customer Code:</span>
-                <span className="font-semibold text-[#0B1C30]">{customerToDelete.customer_code ?? "—"}</span>
+            {!deleteError && (
+              <div className="space-y-2 text-xs text-slate-600">
+                <p>
+                  Are you sure you want to delete <strong>{customerToDelete.name}</strong>?
+                </p>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 font-mono text-[11px] space-y-1">
+                  <div>Code: {customerToDelete.customer_code || "—"}</div>
+                  <div>City: {customerToDelete.city || "—"}</div>
+                  <div>Opening Balance: ₹{Number(customerToDelete.opening_balance || 0).toLocaleString("en-IN")}</div>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-[#6E7977]">Opening Balance:</span>
-                <span className="font-semibold text-[#BA1A1A]">₹{Number(customerToDelete.opening_balance).toLocaleString("en-IN")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#6E7977]">Current Status:</span>
-                <span className="font-semibold text-[#0B1C30]">{customerToDelete.is_active ? "Active" : "Inactive"}</span>
-              </div>
-            </div>
+            )}
 
-            {/* Modal Actions */}
-            <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
               <button
                 type="button"
+                disabled={isProcessing}
                 onClick={() => {
                   setCustomerToDelete(null);
                   setDeleteError(null);
+                  setCanFallbackDeactivate(false);
                 }}
-                disabled={isProcessing}
-                className="flex-1 h-10 border border-[#BDC9C6] rounded-xl text-xs font-semibold text-[#0B1C30] hover:bg-slate-50 transition-colors cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
               >
                 Cancel
               </button>
 
-              {customerToDelete.is_active && (
+              {canFallbackDeactivate ? (
                 <button
                   type="button"
-                  onClick={handleDeactivate}
                   disabled={isProcessing}
-                  className="flex-1 h-10 border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  onClick={handleDeactivate}
+                  className="px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
-                  <UserX className="w-3.5 h-3.5" />
-                  <span>Deactivate</span>
+                  {isProcessing ? <Spinner className="w-3.5 h-3.5 text-white" /> : <UserX className="w-3.5 h-3.5" />}
+                  <span>Deactivate Customer</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={isProcessing}
+                  onClick={handleDelete}
+                  className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  {isProcessing ? <Spinner className="w-3.5 h-3.5 text-white" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  <span>Confirm Delete</span>
                 </button>
               )}
-
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={isProcessing}
-                className="flex-1 h-10 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-75"
-              >
-                {isProcessing ? (
-                  <Spinner className="w-4 h-4 text-white" />
-                ) : (
-                  <Trash2 className="w-3.5 h-3.5" />
-                )}
-                <span>Delete</span>
-              </button>
             </div>
           </div>
         </div>
@@ -730,31 +717,39 @@ export const CustomersView: React.FC<{ onOpenAddCustomer: () => void }> = ({ onO
 
 export const SalesmenView: React.FC = () => {
   const salesmen = useDashboardStore((s) => s.salesmen);
+  const customers = useDashboardStore((s) => s.customers);
 
   return (
     <div data-component="SalesmenView" className="space-y-6 max-w-360 mx-auto">
       <div>
-        <h2 className="text-2xl font-bold text-[#0B1C30]">Sales Force</h2>
-        <p className="text-sm text-[#3E4947] font-medium">Team directory</p>
+        <h2 className="text-2xl font-bold text-[#0B1C30]">Sales Team Overview</h2>
+        <p className="text-sm text-[#3E4947]">Directory and customer allocations for your on-field team</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {salesmen.map((s) => {
-          const initials = s.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {salesmen.map((sm) => {
+          const assignedCount = customers.filter((c) => c.assigned_salesman_id === sm.id).length;
           return (
-            <div key={s.id} className="bg-white p-6 rounded-[14px] border border-[#E2E8F0] shadow-xs flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-teal-brand text-white text-base font-bold flex items-center justify-center">
-                {initials}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-base font-bold text-[#0B1C30]">{s.name}</h4>
-                <p className="text-xs text-[#6E7977]">{s.email ?? s.profiles?.email}</p>
-                <div className="flex items-center gap-4 mt-2 text-xs font-semibold text-[#3E4947]">
-                  {s.employee_code && <span>Code: {s.employee_code}</span>}
-                  <span className={s.is_active ? "text-teal-brand" : "text-gray-400"}>
-                    {s.is_active ? "Active" : "Inactive"}
+            <div key={sm.id} className="bg-white rounded-[14px] border border-[#E2E8F0] p-6 shadow-xs flex flex-col justify-between space-y-4">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-semibold px-2 py-0.5 bg-[#EFF4FF] text-teal-brand rounded">
+                    {sm.employee_code || sm.id.slice(0, 8)}
+                  </span>
+                  <span className={`text-xs px-2 py-0.5 rounded font-semibold ${sm.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                    {sm.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </div>
+                <h3 className="text-lg font-bold text-[#0B1C30] mt-3">{sm.name}</h3>
+                <div className="text-xs text-[#3E4947] mt-1 space-y-0.5">
+                  <p>{sm.email || "No email provided"}</p>
+                  <p>{sm.phone || "No phone provided"}</p>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-[#E2E8F0] flex items-center justify-between text-xs">
+                <span className="text-[#3E4947] font-medium">Assigned Accounts</span>
+                <span className="font-bold text-teal-brand bg-[#EFF4FF] px-2.5 py-1 rounded-full">{assignedCount} Customers</span>
               </div>
             </div>
           );
@@ -764,64 +759,611 @@ export const SalesmenView: React.FC = () => {
   );
 };
 
-export const CollectionsView: React.FC<{ onOpenQuickAdd: () => void }> = ({ onOpenQuickAdd }) => {
+export const CollectionsView: React.FC<{
+  onOpenLogPayment?: () => void;
+  onOpenQuickAdd?: () => void;
+}> = ({ onOpenLogPayment, onOpenQuickAdd }) => {
   const payments = useDashboardStore((s) => s.payments);
   const customers = useDashboardStore((s) => s.customers);
+  const salesmen = useDashboardStore((s) => s.salesmen);
+  const invoices = useDashboardStore((s) => s.invoices);
+
+  // Filters and search
+  const [searchTerm, setSearchTerm] = useState("");
+  const [methodFilter, setMethodFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
+
+  // Receipt Modal State
+  const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState<PaymentRow | null>(null);
+  const [receiptAllocations, setReceiptAllocations] = useState<AllocationRow[]>([]);
+  const [isLoadingAllocations, setIsLoadingAllocations] = useState(false);
+  const [copiedReceipt, setCopiedReceipt] = useState(false);
+
+  // Handle clicking + Log Payment
+  const handleOpenLogModal = () => {
+    if (onOpenLogPayment) {
+      onOpenLogPayment();
+    } else if (onOpenQuickAdd) {
+      onOpenQuickAdd();
+    }
+  };
+
+  // Inspect receipt and fetch allocations
+  const handleInspectReceipt = async (payment: PaymentRow) => {
+    setSelectedPaymentForReceipt(payment);
+    setIsLoadingAllocations(true);
+    try {
+      const data = await getPaymentAllocations(payment.id);
+      setReceiptAllocations(data);
+    } catch (err) {
+      console.warn("Could not fetch payment allocations:", err);
+      setReceiptAllocations([]);
+    } finally {
+      setIsLoadingAllocations(false);
+    }
+  };
+
+  // KPI calculations
+  const todayStr = new Date().toISOString().split("T")[0];
+  const thisMonthStr = new Date().toISOString().slice(0, 7);
+
+  const totalCollections = useMemo(() => {
+    return payments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+  }, [payments]);
+
+  const todayCollections = useMemo(() => {
+    return payments
+      .filter((p) => p.payment_date && p.payment_date.startsWith(todayStr))
+      .reduce((acc, p) => acc + Number(p.amount || 0), 0);
+  }, [payments, todayStr]);
+
+  const monthCollections = useMemo(() => {
+    return payments
+      .filter((p) => p.payment_date && p.payment_date.startsWith(thisMonthStr))
+      .reduce((acc, p) => acc + Number(p.amount || 0), 0);
+  }, [payments, thisMonthStr]);
+
+  const cashCollections = useMemo(() => {
+    return payments
+      .filter((p) => p.payment_method === "cash")
+      .reduce((acc, p) => acc + Number(p.amount || 0), 0);
+  }, [payments]);
+
+  const digitalCollections = totalCollections - cashCollections;
+
+  // Filtered payments list
+  const filteredPayments = useMemo(() => {
+    return payments.filter((p) => {
+      const cust = customers.find((c) => c.id === p.customer_id);
+      const sm = salesmen.find((s) => s.id === p.salesman_id);
+      const custName = cust?.name || "";
+      const smName = sm?.name || "";
+      const payNo = p.payment_number || p.id;
+      const refNo = p.reference_number || "";
+
+      // Search query
+      if (searchTerm.trim()) {
+        const q = searchTerm.toLowerCase().trim();
+        const matches =
+          custName.toLowerCase().includes(q) ||
+          smName.toLowerCase().includes(q) ||
+          payNo.toLowerCase().includes(q) ||
+          refNo.toLowerCase().includes(q);
+        if (!matches) return false;
+      }
+
+      // Method filter
+      if (methodFilter !== "all" && p.payment_method !== methodFilter) {
+        return false;
+      }
+
+      // Date filter
+      if (dateFilter === "today" && !p.payment_date.startsWith(todayStr)) {
+        return false;
+      }
+      if (dateFilter === "month" && !p.payment_date.startsWith(thisMonthStr)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [payments, customers, salesmen, searchTerm, methodFilter, dateFilter, todayStr, thisMonthStr]);
+
+  const filteredTotalAmount = useMemo(() => {
+    return filteredPayments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+  }, [filteredPayments]);
+
+  const getMethodBadge = (method: string) => {
+    switch (method.toLowerCase()) {
+      case "upi":
+        return {
+          bg: "bg-indigo-50 border-indigo-200 text-indigo-700",
+          icon: "⚡",
+          label: "UPI",
+        };
+      case "bank_transfer":
+        return {
+          bg: "bg-blue-50 border-blue-200 text-blue-700",
+          icon: "🏦",
+          label: "Bank Transfer",
+        };
+      case "cash":
+        return {
+          bg: "bg-emerald-50 border-emerald-200 text-emerald-700",
+          icon: "💵",
+          label: "Cash",
+        };
+      case "cheque":
+        return {
+          bg: "bg-amber-50 border-amber-200 text-amber-700",
+          icon: "📄",
+          label: "Cheque",
+        };
+      default:
+        return {
+          bg: "bg-slate-100 border-slate-200 text-slate-700",
+          icon: "📦",
+          label: method.replace("_", " "),
+        };
+    }
+  };
+
+  const handleCopyReceiptText = () => {
+    if (!selectedPaymentForReceipt) return;
+    const cust = customers.find((c) => c.id === selectedPaymentForReceipt.customer_id);
+    const sm = salesmen.find((s) => s.id === selectedPaymentForReceipt.salesman_id);
+    const text = `
+========================================
+SUBH ENTERPRISE - PAYMENT RECEIPT
+========================================
+Receipt #    : ${selectedPaymentForReceipt.payment_number || selectedPaymentForReceipt.id.slice(0, 8)}
+Date         : ${new Date(selectedPaymentForReceipt.payment_date).toLocaleDateString("en-IN")}
+Customer     : ${cust?.name || "Customer"}
+Salesman     : ${sm?.name || "Admin / Direct"}
+Amount Paid  : ₹${Number(selectedPaymentForReceipt.amount).toLocaleString("en-IN")}
+Payment Mode : ${selectedPaymentForReceipt.payment_method.toUpperCase()}
+Reference #  : ${selectedPaymentForReceipt.reference_number || "N/A"}
+========================================
+`.trim();
+
+    navigator.clipboard.writeText(text);
+    setCopiedReceipt(true);
+    setTimeout(() => setCopiedReceipt(false), 2500);
+  };
 
   return (
     <div data-component="CollectionsView" className="space-y-6 max-w-360 mx-auto">
-      <div className="flex items-center justify-between">
+      {/* Header with Title and Primary CTA */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-[#0B1C30]">Collections Log</h2>
-          <p className="text-sm text-[#3E4947]">Real-time log of payments received</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#0B1C30] tracking-tight">
+            Collections &amp; Payments Log
+          </h2>
+          <p className="text-sm text-[#3E4947] mt-1">
+            Real-time ledger of payments received, payment methods, and invoice allocations
+          </p>
         </div>
-        <button onClick={onOpenQuickAdd}
-          className="px-4 py-2 bg-teal-brand text-white text-sm font-semibold rounded-lg shadow-xs hover:bg-teal-brand/90 cursor-pointer">
-          + Log Payment
+        <button
+          onClick={handleOpenLogModal}
+          className="h-11 px-5 bg-teal-brand text-white text-sm font-bold rounded-xl shadow-xs hover:bg-teal-brand/90 transition-all flex items-center gap-2 cursor-pointer shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+          <span>+ Log Payment</span>
         </button>
       </div>
 
-      <div className="bg-white rounded-[14px] border border-[#E2E8F0] overflow-hidden shadow-xs">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-[#F8F9FF] border-b border-[#E2E8F0] text-[#3E4947] font-semibold uppercase tracking-wider text-xs">
-            <tr>
-              <th className="p-4">Payment #</th>
-              <th className="p-4">Customer</th>
-              <th className="p-4">Amount</th>
-              <th className="p-4">Method</th>
-              <th className="p-4">Date</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#E2E8F0]">
-            {payments.map((p) => {
-              const custName =
-                customers.find((c) => c.id === p.customer_id)?.name ??
-                (p as PaymentRow & { customers?: { name: string } | null }).customers?.name ??
-                "Unknown Customer";
+      {/* ── KPI Bento Summary Cards ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-2xs">
+          <div className="flex justify-between items-start">
+            <span className="text-xs font-semibold text-[#3E4947] uppercase tracking-wider">
+              Total Collections
+            </span>
+            <div className="p-1.5 rounded-lg bg-[#E5EEFF] text-teal-brand">
+              <Wallet className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-[#0B1C30] mt-3 font-mono">
+            ₹{totalCollections.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+          </div>
+          <div className="text-xs text-slate-500 mt-1 font-medium">
+            {payments.length} total receipts recorded
+          </div>
+        </div>
 
-              return (
-                <tr key={p.id} className="hover:bg-[#F8F9FF]">
-                  <td className="p-4 font-mono font-semibold text-[#3E4947]">{p.payment_number ?? p.id.slice(0, 8)}</td>
-                  <td className="p-4 font-bold text-[#0B1C30]">{custName}</td>
-                  <td className="p-4 font-bold text-teal-brand">₹{Number(p.amount).toLocaleString("en-IN")}</td>
-                  <td className="p-4 text-[#3E4947] capitalize">{p.payment_method.replace("_", " ")}</td>
-                  <td className="p-4 text-[#3E4947]">{new Date(p.payment_date).toLocaleDateString("en-IN")}</td>
-                </tr>
-              );
-            })}
-            {payments.length === 0 && (
-              <tr>
-                <td colSpan={5} className="p-8 text-center text-slate-500 font-medium">
-                  No payment collections logged yet.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-2xs">
+          <div className="flex justify-between items-start">
+            <span className="text-xs font-semibold text-[#3E4947] uppercase tracking-wider">
+              Today&apos;s Collections
+            </span>
+            <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-emerald-700 mt-3 font-mono">
+            ₹{todayCollections.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+          </div>
+          <div className="text-xs text-emerald-700 mt-1 font-medium">
+            Received today ({new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short" })})
+          </div>
+        </div>
+
+        <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-2xs">
+          <div className="flex justify-between items-start">
+            <span className="text-xs font-semibold text-[#3E4947] uppercase tracking-wider">
+              Digital / Cheque
+            </span>
+            <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600">
+              <CreditCard className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-[#0B1C30] mt-3 font-mono">
+            ₹{digitalCollections.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+          </div>
+          <div className="text-xs text-slate-500 mt-1 font-medium">
+            UPI, Bank Transfers &amp; Cheques
+          </div>
+        </div>
+
+        <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-2xs">
+          <div className="flex justify-between items-start">
+            <span className="text-xs font-semibold text-[#3E4947] uppercase tracking-wider">
+              Cash Collections
+            </span>
+            <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+              <Banknote className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-[#0B1C30] mt-3 font-mono">
+            ₹{cashCollections.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+          </div>
+          <div className="text-xs text-slate-500 mt-1 font-medium">Physical cash receipts</div>
+        </div>
       </div>
+
+      {/* ── Search and Filters Bar ── */}
+      <div className="bg-white rounded-xl border border-[#E2E8F0] p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by customer, payment #, reference #, or collector..."
+            className="w-full h-10 pl-10 pr-4 text-xs bg-slate-50 border border-[#BDC9C6] rounded-xl text-[#0B1C30] placeholder-slate-400 focus:bg-white focus:outline-none focus:border-teal-brand font-medium"
+          />
+        </div>
+
+        <div className="flex items-center gap-2.5 overflow-x-auto">
+          {/* Method Filter */}
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl text-xs shrink-0">
+            <Filter className="w-3.5 h-3.5 text-slate-400" />
+            <select
+              value={methodFilter}
+              onChange={(e) => setMethodFilter(e.target.value)}
+              className="bg-transparent text-slate-700 font-semibold focus:outline-none cursor-pointer"
+            >
+              <option value="all">All Modes</option>
+              <option value="upi">UPI</option>
+              <option value="bank_transfer">Bank Transfer</option>
+              <option value="cash">Cash</option>
+              <option value="cheque">Cheque</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          {/* Date Filter */}
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl text-xs shrink-0">
+            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="bg-transparent text-slate-700 font-semibold focus:outline-none cursor-pointer"
+            >
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="month">This Month</option>
+            </select>
+          </div>
+
+          {searchTerm || methodFilter !== "all" || dateFilter !== "all" ? (
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setMethodFilter("all");
+                setDateFilter("all");
+              }}
+              className="text-xs font-bold text-teal-brand hover:underline px-2 cursor-pointer shrink-0"
+            >
+              Reset
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Filter summary status */}
+      {(searchTerm || methodFilter !== "all" || dateFilter !== "all") && (
+        <div className="text-xs text-slate-500 px-1 flex items-center justify-between">
+          <span>
+            Showing <strong>{filteredPayments.length}</strong> matching transaction(s)
+          </span>
+          <span className="font-mono font-bold text-slate-800">
+            Total: ₹{filteredTotalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+          </span>
+        </div>
+      )}
+
+      {/* ── Payments Log Table ── */}
+      <div className="bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden shadow-xs">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[#F8F9FF] border-b border-[#E2E8F0] text-[#3E4947] font-semibold uppercase tracking-wider text-[11px]">
+              <tr>
+                <th className="p-4">Receipt / Payment #</th>
+                <th className="p-4">Customer</th>
+                <th className="p-4">Collector</th>
+                <th className="p-4 text-right">Amount (₹)</th>
+                <th className="p-4 text-center">Method</th>
+                <th className="p-4">Ref / Cheque #</th>
+                <th className="p-4">Date</th>
+                <th className="p-4 text-center">Receipt</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#E2E8F0]">
+              {filteredPayments.map((p) => {
+                const cust = customers.find((c) => c.id === p.customer_id);
+                const sm = salesmen.find((s) => s.id === p.salesman_id);
+                const custName =
+                  cust?.name ??
+                  (p as PaymentRow & { customers?: { name: string } | null }).customers?.name ??
+                  "Unknown Customer";
+                const smName =
+                  sm?.name ??
+                  (p as PaymentRow & { salesmen?: { name: string } | null }).salesmen?.name ??
+                  "Admin / Direct";
+                const badge = getMethodBadge(p.payment_method);
+
+                return (
+                  <tr
+                    key={p.id}
+                    onClick={() => handleInspectReceipt(p)}
+                    className="hover:bg-[#F8F9FF] cursor-pointer transition-colors"
+                  >
+                    <td className="p-4 font-mono font-bold text-slate-800">
+                      <span className="px-2 py-1 bg-slate-100 rounded-md border border-slate-200">
+                        {p.payment_number ?? p.id.slice(0, 8)}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="font-bold text-[#0B1C30] text-sm">{custName}</div>
+                      {cust?.customer_code && (
+                        <div className="text-[11px] font-mono text-slate-400">
+                          {cust.customer_code}
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-4 text-slate-600 font-medium">{smName}</td>
+                    <td className="p-4 text-right font-mono font-black text-emerald-700 text-sm">
+                      ₹{Number(p.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="p-4 text-center">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase border shadow-2xs ${badge.bg}`}
+                      >
+                        <span>{badge.icon}</span>
+                        <span>{badge.label}</span>
+                      </span>
+                    </td>
+                    <td className="p-4 font-mono text-slate-600">
+                      {p.reference_number || <span className="text-slate-300">—</span>}
+                    </td>
+                    <td className="p-4 text-slate-600">
+                      {new Date(p.payment_date).toLocaleDateString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td className="p-4 text-center">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleInspectReceipt(p);
+                        }}
+                        className="p-1.5 text-teal-brand hover:bg-[#E5EEFF] rounded-lg transition-colors cursor-pointer"
+                        title="View Official Receipt Voucher"
+                      >
+                        <Receipt className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filteredPayments.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="p-10 text-center text-slate-500 font-medium">
+                    {payments.length === 0
+                      ? "No payment collections logged yet. Click '+ Log Payment' above to record the first entry."
+                      : "No payments match your current search and filters."}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── PAYMENT RECEIPT INSPECTOR MODAL ── */}
+      {selectedPaymentForReceipt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border border-slate-200 p-6 space-y-5 animate-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-teal-brand text-white flex items-center justify-center shadow-xs">
+                  <Receipt className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#0B1C30]">Payment Receipt Voucher</h3>
+                  <p className="text-[11px] text-slate-500 font-mono">
+                    {selectedPaymentForReceipt.payment_number || selectedPaymentForReceipt.id}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedPaymentForReceipt(null)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto space-y-4 text-xs pr-1">
+              {/* Amount hero */}
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex justify-between items-center">
+                <div>
+                  <span className="text-[11px] font-bold text-emerald-800 uppercase">
+                    Amount Received
+                  </span>
+                  <div className="text-2xl font-black text-emerald-700 font-mono mt-0.5">
+                    ₹
+                    {Number(selectedPaymentForReceipt.amount).toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="px-2.5 py-1 rounded bg-white border border-emerald-300 text-emerald-800 text-xs font-bold uppercase font-mono shadow-2xs">
+                    {selectedPaymentForReceipt.payment_method.replace("_", " ")}
+                  </span>
+                </div>
+              </div>
+
+              {/* Customer and Collector details */}
+              <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-semibold">Customer</span>
+                  <span className="font-bold text-slate-900">
+                    {customers.find((c) => c.id === selectedPaymentForReceipt.customer_id)?.name ||
+                      "Customer"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-semibold">Collector / Salesman</span>
+                  <span className="font-medium text-slate-800">
+                    {salesmen.find((s) => s.id === selectedPaymentForReceipt.salesman_id)?.name ||
+                      "Admin / Direct"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-semibold">Payment Date</span>
+                  <span className="font-mono text-slate-800">
+                    {new Date(selectedPaymentForReceipt.payment_date).toLocaleDateString("en-IN", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                </div>
+                {selectedPaymentForReceipt.reference_number && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 font-semibold">Reference / UTR</span>
+                    <span className="font-mono font-bold text-slate-800">
+                      {selectedPaymentForReceipt.reference_number}
+                    </span>
+                  </div>
+                )}
+                {selectedPaymentForReceipt.notes && (
+                  <div className="flex justify-between items-start pt-1 border-t border-slate-200">
+                    <span className="text-slate-500 font-semibold">Notes</span>
+                    <span className="text-slate-700 text-right max-w-xs">
+                      {selectedPaymentForReceipt.notes}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Allocations breakdown if any */}
+              <div>
+                <span className="font-bold text-slate-700 uppercase tracking-wider block mb-1.5">
+                  Invoice Allocations
+                </span>
+                {isLoadingAllocations ? (
+                  <div className="p-4 text-center bg-slate-50 rounded-lg">
+                    <Spinner className="w-4 h-4 text-teal-brand mx-auto" />
+                  </div>
+                ) : receiptAllocations.length > 0 ? (
+                  <div className="border border-slate-200 rounded-lg overflow-hidden">
+                    <table className="w-full text-left">
+                      <thead className="bg-slate-100 text-slate-600 font-semibold text-[11px]">
+                        <tr>
+                          <th className="p-2">Invoice ID / #</th>
+                          <th className="p-2 text-right">Allocated (₹)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {receiptAllocations.map((a) => {
+                          const matchedInv = invoices.find((inv) => inv.id === a.invoice_id);
+                          return (
+                            <tr key={a.id}>
+                              <td className="p-2 font-mono text-slate-800">
+                                {matchedInv?.invoice_number || a.invoice_id.slice(0, 8)}
+                              </td>
+                              <td className="p-2 text-right font-mono font-bold text-teal-brand">
+                                ₹
+                                {Number(a.allocated_amount).toLocaleString("en-IN", {
+                                  minimumFractionDigits: 2,
+                                })}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-500">
+                    No specific invoice allocations recorded (direct ledger collection credit).
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="pt-3 border-t border-slate-200 flex justify-between items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyReceiptText}
+                className="h-10 px-4 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                {copiedReceipt ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="text-emerald-700">Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-slate-600" />
+                    <span>Copy Text</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedPaymentForReceipt(null)}
+                className="h-10 px-6 rounded-xl bg-teal-brand text-white text-xs font-bold hover:bg-teal-brand/90 transition-opacity cursor-pointer shadow-xs"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
 
 export const OutstandingView: React.FC = () => {
   const customers = useDashboardStore((s) => s.customers);
