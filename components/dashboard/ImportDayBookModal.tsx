@@ -483,13 +483,13 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                         <span className="text-[10px] uppercase font-bold text-[#0051D5]">Parties</span>
                         <p className="text-base font-bold text-[#0051D5]">{parseResult.uniqueCustomers.length}</p>
                       </div>
-                      <div className="bg-white p-2.5 rounded-lg border border-emerald-100 bg-emerald-50/30 text-center">
+                      <div className="p-2.5 rounded-lg border border-emerald-100 bg-emerald-50/30 text-center">
                         <span className="text-[10px] uppercase font-bold text-emerald-800">Total Debit (+)</span>
                         <p className="text-sm font-bold text-emerald-700 font-mono">
                           {formatINR(parseResult.allRows.reduce((sum, r) => sum + (r.debit || 0), 0))}
                         </p>
                       </div>
-                      <div className="bg-white p-2.5 rounded-lg border border-amber-100 bg-amber-50/30 text-center">
+                      <div className="p-2.5 rounded-lg border border-amber-100 bg-amber-50/30 text-center">
                         <span className="text-[10px] uppercase font-bold text-amber-900">Total Credit (&minus;)</span>
                         <p className="text-sm font-bold text-amber-800 font-mono">
                           {formatINR(parseResult.allRows.reduce((sum, r) => sum + (r.credit || 0), 0))}

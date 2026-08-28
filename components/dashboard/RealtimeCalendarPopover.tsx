@@ -212,7 +212,7 @@ export const RealtimeCalendarPopover: React.FC<RealtimeCalendarPopoverProps> = (
         <div
           ref={popoverRef}
           style={{ backgroundColor: "#ffffff", zIndex: 100 }}
-          className="absolute right-0 mt-3 w-[340px] sm:w-[380px] bg-white rounded-2xl shadow-2xl border border-[#CBD5E1] z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 origin-top-right select-none"
+          className="absolute right-0 mt-3 w-85 sm:w-95 bg-white rounded-2xl shadow-2xl border border-[#CBD5E1] z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 origin-top-right select-none"
         >
           {/* Header Banner with Real-time Clock */}
           <div

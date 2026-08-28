@@ -433,7 +433,7 @@ export const CustomerFinancialInspector: React.FC<CustomerFinancialInspectorProp
             </div>
 
             {/* CARD 2: TOTAL DEBIT (+) */}
-            <div className="bg-white p-4 rounded-xl border border-emerald-200 bg-emerald-50/20 shadow-2xs flex flex-col justify-between">
+            <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/20 shadow-2xs flex flex-col justify-between">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">
                   2. Total Debit (+)
@@ -449,13 +449,13 @@ export const CustomerFinancialInspector: React.FC<CustomerFinancialInspectorProp
                 <p className="text-[11px] text-emerald-800/80 mt-0.5 font-medium">
                   {currentSummary.daybook_debit > 0
                     ? `Day Book: ${formatINR(currentSummary.daybook_debit)}`
-                    : "Invoices &amp; Inflows"}
+                    : "Invoices & Inflows"}
                 </p>
               </div>
             </div>
 
             {/* CARD 3: TOTAL CREDIT (-) */}
-            <div className="bg-white p-4 rounded-xl border border-amber-200 bg-amber-50/20 shadow-2xs flex flex-col justify-between">
+            <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/20 shadow-2xs flex flex-col justify-between">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider">
                   3. Total Credit (&minus;)
@@ -471,13 +471,13 @@ export const CustomerFinancialInspector: React.FC<CustomerFinancialInspectorProp
                 <p className="text-[11px] text-amber-900/80 mt-0.5 font-medium">
                   {currentSummary.daybook_credit > 0
                     ? `Day Book: ${formatINR(currentSummary.daybook_credit)}`
-                    : "Collections &amp; Payments"}
+                    : "Collections & Payments"}
                 </p>
               </div>
             </div>
 
             {/* CARD 4: TOTAL / NET BALANCE (HERO CARD) */}
-            <div className="bg-gradient-to-br from-[#0051D5] to-[#1B2CC1] text-white p-4 rounded-xl shadow-md flex flex-col justify-between">
+            <div className="bg-linear-to-br from-[#0051D5] to-teal-brand text-white p-4 rounded-xl shadow-md flex flex-col justify-between">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-blue-100">
                   Total Net Balance
