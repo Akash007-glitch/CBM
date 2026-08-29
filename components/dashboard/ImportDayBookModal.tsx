@@ -71,10 +71,9 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
   const [showErrorDetails, setShowErrorDetails] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  if (!isOpen) return null;
-
-  const handleReset = () => {
+  const handleReset = React.useCallback(() => {
     setSelectedFile(null);
     setParseResult(null);
     setMappings([]);
@@ -84,7 +83,29 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
     setIsEditingMapping(false);
     setShowErrorDetails(false);
     setActivePreviewTab("rows");
-  };
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }, []);
+
+  const handleClose = React.useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsProcessing(false);
+    setIsParsing(false);
+    handleReset();
+    onClose();
+  }, [handleReset, onClose]);
+
+  React.useEffect(() => {
+    if (!isOpen) {
+      handleReset();
+    }
+  }, [isOpen, handleReset]);
+
+  if (!isOpen) return null;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -175,23 +196,34 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
     setIsProcessing(true);
     setParseError(null);
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
-      const response = await importDayBook({
-        fileName: selectedFile.name,
-        fileSize: selectedFile.size,
-        targetAccount,
-        checkDuplicates,
-        rows: parseResult.allRows,
-      });
+      const response = await importDayBook(
+        {
+          fileName: selectedFile.name,
+          fileSize: selectedFile.size,
+          targetAccount,
+          checkDuplicates,
+          rows: parseResult.allRows,
+        },
+        controller.signal
+      );
 
       setImportResult(response);
       // Trigger live store refresh to update KPI cards, customers list, and activity feed
       await refreshStore();
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        // User explicitly cancelled import — exit cleanly
+        return;
+      }
       console.error("Import processing error:", err);
       setParseError(err instanceof Error ? err.message : "Import processing failed. Please try again.");
     } finally {
       setIsProcessing(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -207,7 +239,7 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
       data-component="ImportDayBookModal"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1C30]/50 backdrop-blur-xs"
       onClick={(e) => {
-        if (e.target === e.currentTarget && !isProcessing) onClose();
+        if (e.target === e.currentTarget) handleClose();
       }}
     >
       <div className="bg-white w-full max-w-215 rounded-2xl shadow-2xl overflow-hidden border border-[#E2E8F0] animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[94vh]">
@@ -223,9 +255,8 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
           </div>
           <button
             type="button"
-            disabled={isProcessing}
-            onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-[#6E7977] hover:text-[#0B1C30] hover:bg-[#E5EEFF] transition-colors cursor-pointer disabled:opacity-50"
+            onClick={handleClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[#6E7977] hover:text-[#0B1C30] hover:bg-[#E5EEFF] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -251,22 +282,20 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
           {importResult ? (
             <div className="space-y-6 animate-in fade-in zoom-in-95 duration-200">
               <div
-                className={`text-center py-4 rounded-2xl p-6 border ${
-                  importResult.status === "completed"
+                className={`text-center py-4 rounded-2xl p-6 border ${importResult.status === "completed"
                     ? "bg-emerald-50/70 border-emerald-200"
                     : importResult.status === "completed_with_errors"
-                    ? "bg-amber-50/70 border-amber-200"
-                    : "bg-red-50/70 border-red-200"
-                }`}
+                      ? "bg-amber-50/70 border-amber-200"
+                      : "bg-red-50/70 border-red-200"
+                  }`}
               >
                 <div
-                  className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 ${
-                    importResult.status === "completed"
+                  className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 ${importResult.status === "completed"
                       ? "bg-emerald-100 text-emerald-700"
                       : importResult.status === "completed_with_errors"
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-red-100 text-red-700"
-                  }`}
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
                 >
                   {importResult.status === "completed" ? (
                     <CheckCircle2 className="w-8 h-8" />
@@ -280,8 +309,8 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                   {importResult.status === "completed"
                     ? "Day Book Import Complete!"
                     : importResult.status === "completed_with_errors"
-                    ? "Import Finished with Some Errors"
-                    : "Import Failed"}
+                      ? "Import Finished with Some Errors"
+                      : "Import Failed"}
                 </h3>
                 <p className="text-xs text-[#3E4947] mt-1 font-medium">
                   File: <span className="font-bold text-[#0B1C30]">{importResult.fileName}</span> &bull; Batch ID: {importResult.batchId.slice(0, 8)}
@@ -439,11 +468,11 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
               </div>
 
               {/* IMPORT SETTINGS */}
-              <div className="flex items-center gap-3 pb-2 sm:pb-2.5">
+              <div className="flex items-start gap-3 pb-2 sm:pb-2.5">
                 <button
                   type="button"
                   onClick={() => setCheckDuplicates(!checkDuplicates)}
-                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${checkDuplicates ? "bg-teal-brand" : "bg-[#CBD5E1]"
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none mt-0.5 ${checkDuplicates ? "bg-teal-brand" : "bg-[#CBD5E1]"
                     }`}
                 >
                   <span
@@ -451,12 +480,17 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
                       }`}
                   />
                 </button>
-                <span
-                  className="text-xs font-medium text-[#3E4947] select-none cursor-pointer"
+                <div
+                  className="select-none cursor-pointer"
                   onClick={() => setCheckDuplicates(!checkDuplicates)}
                 >
-                  Check for duplicate entries (auto-skip existing transactions)
-                </span>
+                  <span className="text-xs font-semibold text-[#0B1C30] block">
+                    Check for duplicate vouchers (auto-skip previously imported Date + Voucher  + Amount)
+                  </span>
+                  <span className="text-[11px] text-[#6E7977] block mt-0.5">
+                    Protects against double-importing identical files. Repeat customer transactions on new dates/vouchers are always imported.
+                  </span>
+                </div>
               </div>
 
               {/* DATA MAPPING & PREVIEW (ONLY WHEN FILE IS LOADED) */}
@@ -696,11 +730,10 @@ export const ImportDayBookModal: React.FC<ImportDayBookModalProps> = ({ isOpen, 
           <div className="flex items-center gap-3">
             <button
               type="button"
-              disabled={isProcessing}
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-semibold text-[#3E4947] hover:text-[#0B1C30] transition-colors cursor-pointer rounded-lg hover:bg-slate-100 disabled:opacity-50"
+              onClick={handleClose}
+              className="px-4 py-2 text-sm font-semibold text-[#3E4947] hover:text-[#0B1C30] transition-colors cursor-pointer rounded-lg hover:bg-slate-100"
             >
-              {importResult ? "Close" : "Cancel"}
+              {importResult ? "Close" : isProcessing ? "Cancel Import" : "Cancel"}
             </button>
 
             {!importResult && (

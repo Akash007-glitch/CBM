@@ -34,7 +34,8 @@ export interface ImportDayBookResponse {
  * Sends parsed Day Book data to the secure server route for database processing
  */
 export async function importDayBook(
-  payload: ImportDayBookPayload
+  payload: ImportDayBookPayload,
+  signal?: AbortSignal
 ): Promise<ImportDayBookResponse> {
   const response = await fetch("/api/admin/day-book/import", {
     method: "POST",
@@ -42,6 +43,7 @@ export async function importDayBook(
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
+    signal,
   });
 
   if (!response.ok) {

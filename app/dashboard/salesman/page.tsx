@@ -1,10 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { useLogout, useUser } from "@/store/authStore";
 import { useDashboardStore, Customer } from "@/store/dashboardStore";
-import { getCustomerOutstanding } from "@/lib/services/customerService";
+import {
+  getCustomerOutstanding,
+  type CustomerFinancialSummary,
+} from "@/lib/services/customerService";
 import type { PaymentWithCustomer } from "@/lib/services/paymentService";
 import {
   Menu,
@@ -29,8 +32,35 @@ import {
   Check,
   Copy,
   FileCheck,
+  QrCode,
+  ChevronDown,
 } from "lucide-react";
 import { Spinner } from "@/components/ui/Spinner";
+
+export type PaymentMethod = "cash" | "upi" | "bank_transfer" | "cheque" | "other";
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  cash: "Cash",
+  upi: "UPI / QR",
+  bank_transfer: "Bank Transfer",
+  cheque: "Cheque",
+  other: "Other",
+};
+
+export const isCashAccount = (name?: string | null): boolean => {
+  if (!name) return false;
+  const norm = name.trim().toUpperCase();
+  return (
+    norm === "CASH" ||
+    norm === "CASH A/C" ||
+    norm === "CASH A/C." ||
+    norm === "CASH AC" ||
+    norm === "CASH ACCOUNT" ||
+    norm === "CASH IN HAND" ||
+    norm === "PETTY CASH" ||
+    /^CASH(\s+(A\/C|ACCOUNT|IN\s+HAND))?$/i.test(norm)
+  );
+};
 
 export default function SalesmanDashboardPage() {
   const logout = useLogout();
@@ -47,11 +77,19 @@ export default function SalesmanDashboardPage() {
   const initialize = useDashboardStore((s) => s.initialize);
   const destroy = useDashboardStore((s) => s.destroy);
   const customers = useDashboardStore((s) => s.customers);
+  const financialSummaries = useDashboardStore((s) => s.financialSummaries);
   const salesmen = useDashboardStore((s) => s.salesmen);
   const payments = useDashboardStore((s) => s.payments);
   const invoices = useDashboardStore((s) => s.invoices);
   const recordPayment = useDashboardStore((s) => s.recordPayment);
   const addCustomer = useDashboardStore((s) => s.addCustomer);
+
+  // Map customer_id -> CustomerFinancialSummary
+  const summaryMap = useMemo(() => {
+    const map = new Map<string, CustomerFinancialSummary>();
+    financialSummaries.forEach((s) => map.set(s.customer_id, s));
+    return map;
+  }, [financialSummaries]);
 
   // Resolve the current salesman's row ID (needed for payment RLS)
   const currentUser = useUser();
@@ -74,6 +112,35 @@ export default function SalesmanDashboardPage() {
 
   // Record Collection Form state
   const [collCustomer, setCollCustomer] = useState<Customer | null>(null);
+  const [collCustomerSearch, setCollCustomerSearch] = useState("");
+  const [isCollCustomerDropdownOpen, setIsCollCustomerDropdownOpen] = useState(false);
+  const collDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close customer dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (collDropdownRef.current && !collDropdownRef.current.contains(event.target as Node)) {
+        setIsCollCustomerDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Filtered customer list for collection customer selector (excludes Cash & system accounts)
+  const collFilteredCustomers = useMemo(() => {
+    const validCustomers = customers.filter((c) => !isCashAccount(c.name));
+    if (!collCustomerSearch.trim()) return validCustomers;
+    const q = collCustomerSearch.toLowerCase();
+    return validCustomers.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.customer_code && c.customer_code.toLowerCase().includes(q)) ||
+        (c.city && c.city.toLowerCase().includes(q)) ||
+        (c.phone && c.phone.includes(q))
+    );
+  }, [customers, collCustomerSearch]);
+
   const [collInvoiceTotal, setCollInvoiceTotal] = useState<number>(0);
   const [collPrevPaid, setCollPrevPaid] = useState<number>(0);
   const [unpaidInvoices, setUnpaidInvoices] = useState<{ invoice_id: string; outstanding_amount: number; invoice_total: number }[]>([]);
@@ -81,7 +148,7 @@ export default function SalesmanDashboardPage() {
   const [damageDeduction, setDamageDeduction] = useState<string>("0");
   const [specialDiscount, setSpecialDiscount] = useState<string>("0");
   const [amountCollected, setAmountCollected] = useState<string>("0.00");
-  const [paymentMethod, setPaymentMethod] = useState<"Cash" | "Cheque" | "Transfer" | "Other">("Cash");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [referenceNumber, setReferenceNumber] = useState<string>("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isFinalizing, setIsFinalizing] = useState(false);
@@ -135,9 +202,14 @@ export default function SalesmanDashboardPage() {
     );
     const totalPaidSum = Math.max(0, totalInvoiceSum - totalOutstandingFromInvoices);
 
+    const summary = summaryMap.get(customer.id);
+    const customerNetBalance = summary ? Number(summary.total_balance) : Number(customer.opening_balance || 0);
+
     const effectiveOutstanding = totalOutstandingFromInvoices > 0
       ? totalOutstandingFromInvoices
-      : Number(customer.opening_balance || 0);
+      : customerNetBalance > 0
+        ? customerNetBalance
+        : Number(customer.opening_balance || 0);
 
     setCollInvoiceTotal(totalInvoiceSum > 0 ? totalInvoiceSum : effectiveOutstanding);
     setCollPrevPaid(totalPaidSum);
@@ -202,7 +274,7 @@ export default function SalesmanDashboardPage() {
           salesman_id: currentSalesmanId,
           created_by: currentUser?.id ?? "",
           amount: collectedNum,
-          payment_method: paymentMethod.toLowerCase() as 'cash' | 'cheque' | 'bank_transfer' | 'upi' | 'other',
+          payment_method: paymentMethod,
           reference_number: referenceNumber.trim() || null,
           notes: damageNum > 0 || discountNum > 0
             ? `Damage: ${damageNum}, Discount: ${discountNum}`
@@ -217,7 +289,7 @@ export default function SalesmanDashboardPage() {
         customerName: collCustomer.name,
         customerCode: collCustomer.customer_code || collCustomer.id.slice(0, 8),
         amount: collectedNum,
-        paymentMethod,
+        paymentMethod: PAYMENT_METHOD_LABELS[paymentMethod] || paymentMethod,
         referenceNumber: referenceNumber.trim() || "N/A",
         date: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
         time: new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
@@ -278,7 +350,7 @@ export default function SalesmanDashboardPage() {
 
   // Filtered customer list (exclude CASH ledger account)
   const filteredCustomers = customers
-    .filter((cust) => cust.name.trim().toUpperCase() !== "CASH")
+    .filter((cust) => !isCashAccount(cust.name))
     .filter((cust) => {
       const q = searchQuery.toLowerCase();
       return (
@@ -294,10 +366,12 @@ export default function SalesmanDashboardPage() {
   const discountNum = parseFloat(specialDiscount) || 0;
   const totalDeduction = damageNum + discountNum;
   const currentOutstanding = collCustomer
-    ? Number(collCustomer.opening_balance) > 0
-      ? Number(collCustomer.opening_balance)
-      : Math.max(0, collInvoiceTotal - collPrevPaid)
-    : 3500;
+    ? (summaryMap.get(collCustomer.id)?.total_balance ?? (
+      Number(collCustomer.opening_balance) > 0
+        ? Number(collCustomer.opening_balance)
+        : Math.max(0, collInvoiceTotal - collPrevPaid)
+    ))
+    : 0;
   const collectedVal = parseFloat(amountCollected) || 0;
   const newBalance = Math.max(0, currentOutstanding - totalDeduction - collectedVal);
 
@@ -326,7 +400,7 @@ export default function SalesmanDashboardPage() {
             <h1 className="text-lg font-bold text-teal-brand tracking-tight">Sales Portal</h1>
 
             <div className="flex items-center gap-1">
-              <button
+              {/* <button
                 onClick={() => {
                   const el = document.getElementById("customer-search-input");
                   if (el) el.focus();
@@ -335,7 +409,7 @@ export default function SalesmanDashboardPage() {
                 aria-label="Search"
               >
                 <Search className="w-5 h-5 text-slate-700" />
-              </button>
+              </button> */}
 
               <button
                 onClick={handleLogout}
@@ -392,6 +466,8 @@ export default function SalesmanDashboardPage() {
                   const isCurrent = cust.is_active;
                   const isInactive = !cust.is_active;
                   const statusLabel = cust.is_active ? "Active" : "Inactive";
+                  const summary = summaryMap.get(cust.id);
+                  const outstanding = summary ? Number(summary.total_balance) : Number(cust.opening_balance || 0);
 
                   return (
                     <div
@@ -432,14 +508,16 @@ export default function SalesmanDashboardPage() {
                             OUTSTANDING
                           </span>
                           <span
-                            className={`text-base font-extrabold ${Number(cust.opening_balance) > 0
+                            className={`text-base font-extrabold ${outstanding > 0
                               ? isOverdue
                                 ? "text-red-600"
                                 : "text-slate-900"
-                              : "text-slate-400"
+                              : outstanding < 0
+                                ? "text-emerald-600"
+                                : "text-slate-400"
                               }`}
                           >
-                            ₹ {Number(cust.opening_balance).toLocaleString("en-IN")}
+                            ₹ {outstanding.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
 
@@ -506,35 +584,219 @@ export default function SalesmanDashboardPage() {
                   <span>Verify collection details and click Confirm Collection below to open final review.</span>
                 </div>
 
-                {/* Customer Input Box */}
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Customer</label>
-                  <div className="relative flex items-center bg-white border border-slate-200 rounded-xl px-3.5 h-11 shadow-2xs">
-                    <Search className="w-4 h-4 text-slate-400 mr-2.5 shrink-0" />
-                    <select
-                      value={collCustomer?.id || ""}
-                      onChange={(e) => {
-                        const found = customers.find((c) => c.id === e.target.value);
-                        if (found) handleOpenCollection(found);
-                      }}
-                      className="w-full text-xs font-bold text-slate-900 bg-transparent outline-none appearance-none cursor-pointer pr-6"
-                    >
-                      {customers.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name} ({c.customer_code || c.id.slice(0, 8)})
-                        </option>
-                      ))}
-                    </select>
+                {/* Customer Selector */}
+                <div className="space-y-1.5" ref={collDropdownRef}>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700">
+                      Customer <span className="text-red-500">*</span>
+                    </label>
                     {collCustomer && (
                       <button
                         type="button"
-                        onClick={() => setCollCustomer(null)}
-                        className="absolute right-3 text-slate-400 hover:text-slate-600 p-1"
+                        onClick={() => {
+                          setCollCustomer(null);
+                          setIsCollCustomerDropdownOpen(true);
+                        }}
+                        className="text-[11px] font-semibold text-teal-brand hover:underline cursor-pointer"
                       >
-                        <X className="w-4 h-4" />
+                        Change Customer
                       </button>
                     )}
                   </div>
+
+                  {collCustomer ? (
+                    /* Selected Customer Snapshot Card */
+                    <div className="bg-white border-2 border-teal-brand/30 rounded-2xl p-3.5 shadow-2xs relative group hover:border-teal-brand/50 transition-all">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-teal-brand/10 text-teal-brand flex items-center justify-center font-black text-sm shrink-0 border border-teal-brand/20">
+                            {collCustomer.name.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-slate-900 text-sm leading-tight">
+                                {collCustomer.name}
+                              </h4>
+                              <span className="px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-mono font-bold">
+                                {collCustomer.customer_code || collCustomer.id.slice(0, 6)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2.5 text-[11px] text-slate-500 mt-1">
+                              {collCustomer.city && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="w-3 h-3 text-slate-400" />
+                                  {collCustomer.city}
+                                </span>
+                              )}
+                              {collCustomer.phone && (
+                                <span className="flex items-center gap-1">
+                                  <Phone className="w-3 h-3 text-slate-400" />
+                                  {collCustomer.phone}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="text-right">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block leading-tight">
+                              Outstanding
+                            </span>
+                            <span className={`text-xs font-black font-mono ${currentOutstanding > 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                              ₹{currentOutstanding.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCollCustomer(null);
+                              setIsCollCustomerDropdownOpen(true);
+                            }}
+                            className="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer ml-1"
+                            title="Remove or Change Customer"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Customer Search Dropdown Trigger & Popover */
+                    <div className="relative">
+                      <div
+                        onClick={() => setIsCollCustomerDropdownOpen(true)}
+                        className={`relative flex items-center bg-white border rounded-xl px-3.5 h-12 shadow-2xs cursor-pointer transition-all ${
+                          isCollCustomerDropdownOpen
+                            ? "border-teal-brand ring-2 ring-teal-brand/20"
+                            : "border-slate-200 hover:border-slate-300"
+                        }`}
+                      >
+                        <Search className="w-4 h-4 text-slate-400 mr-2.5 shrink-0" />
+                        <input
+                          type="text"
+                          value={collCustomerSearch}
+                          onChange={(e) => {
+                            setCollCustomerSearch(e.target.value);
+                            setIsCollCustomerDropdownOpen(true);
+                          }}
+                          onFocus={() => setIsCollCustomerDropdownOpen(true)}
+                          placeholder="Search customer by name, code, city..."
+                          className="w-full text-xs font-semibold text-slate-900 bg-transparent outline-none placeholder-slate-400"
+                        />
+                        {collCustomerSearch ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCollCustomerSearch("");
+                            }}
+                            className="p-1 text-slate-400 hover:text-slate-600 rounded-md cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
+                          <ChevronDown
+                            className={`w-4 h-4 text-slate-400 transition-transform ${
+                              isCollCustomerDropdownOpen ? "rotate-180 text-teal-brand" : ""
+                            }`}
+                          />
+                        )}
+                      </div>
+
+                      {/* Dropdown Menu */}
+                      {isCollCustomerDropdownOpen && (
+                        <div className="absolute top-full left-0 right-0 mt-1.5 max-h-72 overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200 z-40 divide-y divide-slate-100 animate-in fade-in zoom-in-95 duration-150">
+                          <div className="px-3 py-2 bg-slate-50 text-[11px] font-bold text-slate-500 flex items-center justify-between border-b border-slate-100 sticky top-0 z-10 backdrop-blur-xs">
+                            <span>Select a customer ({collFilteredCustomers.length})</span>
+                            {collCustomerSearch && (
+                              <button
+                                type="button"
+                                onClick={() => setCollCustomerSearch("")}
+                                className="text-teal-brand hover:underline font-semibold cursor-pointer"
+                              >
+                                Clear search
+                              </button>
+                            )}
+                          </div>
+
+                          {collFilteredCustomers.length > 0 ? (
+                            collFilteredCustomers.map((cust) => {
+                              const summary = summaryMap.get(cust.id);
+                              const bal = summary ? Number(summary.total_balance) : Number(cust.opening_balance || 0);
+                              return (
+                                <div
+                                  key={cust.id}
+                                  onClick={() => {
+                                    handleOpenCollection(cust);
+                                    setIsCollCustomerDropdownOpen(false);
+                                    setCollCustomerSearch("");
+                                  }}
+                                  className="p-3 hover:bg-teal-50/50 cursor-pointer flex items-center justify-between transition-colors group"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-teal-100 text-slate-700 group-hover:text-teal-brand flex items-center justify-center font-bold text-xs shrink-0 transition-colors">
+                                      {cust.name.slice(0, 2).toUpperCase()}
+                                    </div>
+                                    <div>
+                                      <div className="font-bold text-slate-900 text-xs group-hover:text-teal-brand transition-colors">
+                                        {cust.name}
+                                      </div>
+                                      <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
+                                        <span className="font-mono font-medium text-slate-400">
+                                          {cust.customer_code || cust.id.slice(0, 6)}
+                                        </span>
+                                        {cust.city && (
+                                          <span className="flex items-center gap-0.5">
+                                            • <MapPin className="w-2.5 h-2.5 text-slate-400 inline" /> {cust.city}
+                                          </span>
+                                        )}
+                                        {cust.phone && (
+                                          <span className="flex items-center gap-0.5">
+                                            • <Phone className="w-2.5 h-2.5 text-slate-400 inline" /> {cust.phone}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="text-right pl-3 shrink-0">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase block leading-tight">
+                                      Balance
+                                    </span>
+                                    <span
+                                      className={`text-xs font-black font-mono ${
+                                        bal > 0 ? "text-rose-600" : "text-emerald-600"
+                                      }`}
+                                    >
+                                      ₹{bal.toLocaleString("en-IN")}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="p-6 text-center space-y-2">
+                              <p className="text-xs font-semibold text-slate-600">
+                                No customers found matching &quot;{collCustomerSearch}&quot;
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsAddCustomerOpen(true);
+                                  setIsCollCustomerDropdownOpen(false);
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-brand text-white text-xs font-bold rounded-lg shadow-2xs hover:bg-teal-brand/90 transition-all cursor-pointer"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Add New Customer</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Select Invoice Summary Card */}
@@ -653,26 +915,29 @@ export default function SalesmanDashboardPage() {
                     Payment Method <span className="text-red-500">*</span>
                   </label>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { id: "Cash", label: "Cash", icon: <Banknote className="w-5 h-5 text-teal-brand" /> },
-                      { id: "Cheque", label: "Cheque", icon: <FileText className="w-5 h-5 text-slate-600" /> },
-                      { id: "Transfer", label: "Transfer", icon: <Landmark className="w-5 h-5 text-slate-600" /> },
-                      { id: "Other", label: "Other", icon: <MoreHorizontal className="w-5 h-5 text-slate-600" /> },
-                    ].map((pm) => {
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    {(
+                      [
+                        { id: "cash", label: "Cash", icon: <Banknote className="w-5 h-5" /> },
+                        { id: "upi", label: "UPI / QR", icon: <QrCode className="w-5 h-5" /> },
+                        { id: "bank_transfer", label: "Transfer", icon: <Landmark className="w-5 h-5" /> },
+                        { id: "cheque", label: "Cheque", icon: <FileText className="w-5 h-5" /> },
+                        { id: "other", label: "Other", icon: <MoreHorizontal className="w-5 h-5" /> },
+                      ] as const
+                    ).map((pm) => {
                       const isSelected = paymentMethod === pm.id;
                       return (
                         <button
                           key={pm.id}
                           type="button"
-                          onClick={() => setPaymentMethod(pm.id as "Cash" | "Cheque" | "Transfer" | "Other")}
-                          className={`h-20 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${isSelected
-                            ? "border-teal-brand bg-blue-50/50 shadow-xs"
-                            : "border-slate-200 bg-white hover:bg-slate-50"
+                          onClick={() => setPaymentMethod(pm.id)}
+                          className={`h-16 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${isSelected
+                              ? "border-teal-brand bg-blue-50/70 text-teal-brand shadow-2xs ring-1 ring-teal-brand"
+                              : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
                             }`}
                         >
-                          {pm.icon}
-                          <span className={`text-xs font-bold ${isSelected ? "text-teal-brand" : "text-slate-700"}`}>
+                          <div className={isSelected ? "text-teal-brand" : "text-slate-500"}>{pm.icon}</div>
+                          <span className="text-xs font-bold">
                             {pm.label}
                           </span>
                         </button>
@@ -756,6 +1021,21 @@ export default function SalesmanDashboardPage() {
                     <Wallet className="w-5 h-5" />
                   </div>
                 </div>
+
+                <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Customer Outstanding</span>
+                    <p className="text-2xl font-black text-rose-600 mt-1">
+                      ₹{financialSummaries
+                        .filter((s) => !isCashAccount(s.customer_name))
+                        .reduce((sum, s) => sum + (s.total_balance > 0 ? s.total_balance : 0), 0)
+                        .toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
+                    <Landmark className="w-5 h-5" />
+                  </div>
+                </div>
               </div>
 
               <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs space-y-3">
@@ -815,8 +1095,8 @@ export default function SalesmanDashboardPage() {
                               <CheckCircle2 className="w-3 h-3 text-teal-brand" />
                               Confirmed
                             </span>
-                            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-semibold capitalize">
-                              {col.payment_method?.replace("_", " ") || "Cash"}
+                            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-semibold">
+                              {PAYMENT_METHOD_LABELS[col.payment_method as PaymentMethod] || col.payment_method?.replace("_", " ") || "Cash"}
                             </span>
                           </div>
                         </div>
@@ -942,13 +1222,13 @@ export default function SalesmanDashboardPage() {
               <div className="bg-slate-50 rounded-xl p-4 border border-slate-200/80 space-y-2.5 text-xs">
                 <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                   <span className="font-semibold text-slate-600">Customer</span>
-                  <span className="font-bold text-slate-900">{collCustomer.company || collCustomer.name}</span>
+                  <span className="font-bold text-slate-900">{collCustomer.name}</span>
                 </div>
 
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-slate-600">Payment Method</span>
                   <span className="font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200 text-[11px]">
-                    {paymentMethod}
+                    {PAYMENT_METHOD_LABELS[paymentMethod] || paymentMethod}
                   </span>
                 </div>
 

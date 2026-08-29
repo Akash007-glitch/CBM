@@ -411,9 +411,14 @@ export const CustomersView: React.FC<{ onOpenAddCustomer: () => void }> = ({ onO
   }, [financialSummaries]);
 
   const filteredCustomers = useMemo(() => {
-    if (!tableSearch.trim()) return customers;
+    const validCustomers = customers.filter(
+      (c) =>
+        c.name.trim().toUpperCase() !== "CASH" &&
+        !/^CASH(\s+(A\/C|ACCOUNT|IN\s+HAND))?$/i.test(c.name.trim())
+    );
+    if (!tableSearch.trim()) return validCustomers;
     const q = tableSearch.toLowerCase().trim();
-    return customers.filter(
+    return validCustomers.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
         (c.customer_code && c.customer_code.toLowerCase().includes(q)) ||
@@ -559,9 +564,8 @@ export const CustomersView: React.FC<{ onOpenAddCustomer: () => void }> = ({ onO
                     <tr
                       key={c.id}
                       onClick={() => handleInspectCustomer(c.id)}
-                      className={`hover:bg-[#F0F5FF] cursor-pointer transition-colors ${
-                        selectedCustomerIdForInspector === c.id ? "bg-[#EFF4FF] font-medium" : ""
-                      }`}
+                      className={`hover:bg-[#F0F5FF] cursor-pointer transition-colors ${selectedCustomerIdForInspector === c.id ? "bg-[#EFF4FF] font-medium" : ""
+                        }`}
                     >
                       <td className="p-3.5 font-bold text-[#0B1C30] flex items-center gap-2">
                         <span>{c.name}</span>
@@ -587,11 +591,10 @@ export const CustomersView: React.FC<{ onOpenAddCustomer: () => void }> = ({ onO
                       </td>
                       <td className="p-3.5 text-center">
                         <span
-                          className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                            c.is_active
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              : "bg-slate-100 text-slate-500 border border-slate-200"
-                          }`}
+                          className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${c.is_active
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-slate-100 text-slate-500 border border-slate-200"
+                            }`}
                         >
                           {c.is_active ? "Active" : "Inactive"}
                         </span>
@@ -884,25 +887,25 @@ export const CollectionsView: React.FC<{
       case "bank_transfer":
         return {
           bg: "bg-blue-50 border-blue-200 text-blue-700",
-          icon: "🏦",
+          icon: "",
           label: "Bank Transfer",
         };
       case "cash":
         return {
           bg: "bg-emerald-50 border-emerald-200 text-emerald-700",
-          icon: "💵",
+          icon: "",
           label: "Cash",
         };
       case "cheque":
         return {
           bg: "bg-amber-50 border-amber-200 text-amber-700",
-          icon: "📄",
+          icon: "",
           label: "Cheque",
         };
       default:
         return {
           bg: "bg-slate-100 border-slate-200 text-slate-700",
-          icon: "📦",
+          icon: "",
           label: method.replace("_", " "),
         };
     }
@@ -948,7 +951,7 @@ Reference #  : ${selectedPaymentForReceipt.reference_number || "N/A"}
           className="h-11 px-5 bg-teal-brand text-white text-sm font-bold rounded-xl shadow-xs hover:bg-teal-brand/90 transition-all flex items-center gap-2 cursor-pointer shrink-0"
         >
           <Plus className="w-4 h-4" />
-          <span>+ Log Payment</span>
+          <span>Log Payment</span>
         </button>
       </div>
 

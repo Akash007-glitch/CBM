@@ -28,7 +28,9 @@ import {
   createCustomer,
   deactivateCustomer,
   deleteCustomer,
+  getCustomerFinancialSummaries,
   type CustomerRow,
+  type CustomerFinancialSummary,
 } from "@/lib/services/customerService";
 import {
   getSalesmen,
@@ -77,6 +79,7 @@ interface DashboardState {
   stats: DashboardStats;
   // Entities
   customers: CustomerRow[];
+  financialSummaries: CustomerFinancialSummary[];
   salesmen: SalesmanWithProfile[];
   invoices: InvoiceRow[];
   payments: PaymentRow[];
@@ -139,6 +142,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => {
         getPayments({ limit: 100 }),
         getActivityFeed(20, 0),
         getSalesTrend(start, end),
+        getCustomerFinancialSummaries(),
       ]);
 
       set({
@@ -148,6 +152,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => {
         payments: results[3].status === "fulfilled" ? results[3].value : get().payments,
         activities: results[4].status === "fulfilled" ? results[4].value : get().activities,
         salesTrend: results[5].status === "fulfilled" ? results[5].value : get().salesTrend,
+        financialSummaries: results[6].status === "fulfilled" ? results[6].value : get().financialSummaries,
       });
     } catch (err) {
       console.warn("Realtime refresh failed:", err);
@@ -165,6 +170,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => {
       monthly_revenue: 0,
     },
     customers: [],
+    financialSummaries: [],
     salesmen: [],
     invoices: [],
     payments: [],
@@ -190,6 +196,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => {
           getPayments({ limit: 100 }),
           getActivityFeed(20, 0),
           getSalesTrend(start, end),
+          getCustomerFinancialSummaries(),
         ]);
 
         const stats = results[0].status === "fulfilled" ? results[0].value : {
@@ -206,6 +213,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => {
         const payments = results[4].status === "fulfilled" ? results[4].value : [];
         const activities = results[5].status === "fulfilled" ? results[5].value : [];
         const trend = results[6].status === "fulfilled" ? results[6].value : [];
+        const financialSummaries = results[7].status === "fulfilled" ? results[7].value : [];
 
         // Log any failed calls for diagnostics
         results.forEach((r, idx) => {
@@ -255,6 +263,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => {
         set({
           stats,
           customers,
+          financialSummaries,
           salesmen,
           invoices,
           payments,
@@ -283,6 +292,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => {
           getPayments({ limit: 100 }),
           getActivityFeed(20, 0),
           getSalesTrend(start, end),
+          getCustomerFinancialSummaries(),
         ]);
 
         set({
@@ -293,6 +303,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => {
           payments: results[4].status === "fulfilled" ? results[4].value : get().payments,
           activities: results[5].status === "fulfilled" ? results[5].value : get().activities,
           salesTrend: results[6].status === "fulfilled" ? results[6].value : get().salesTrend,
+          financialSummaries: results[7].status === "fulfilled" ? results[7].value : get().financialSummaries,
           isLoading: false,
         });
       } catch (err) {
@@ -338,6 +349,11 @@ export const useDashboardStore = create<DashboardState>((set, get) => {
     recordPayment: async (paymentPayload, allocations = []) => {
       const { payment } = await createAndAllocatePayment(paymentPayload, allocations);
       set((state) => ({ payments: [payment, ...state.payments] }));
+
+      // Refresh financial summaries in store so UI reflects new balance immediately
+      getCustomerFinancialSummaries()
+        .then((fs) => set({ financialSummaries: fs }))
+        .catch((err) => console.warn("Failed to refresh financial summaries post payment:", err));
 
       // Automatically log payment activity with resolved customer name
       try {
