@@ -47,6 +47,9 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   other: "Other",
 };
 
+import { LogoutConfirmModal } from "@/components/dashboard/LogoutConfirmModal";
+import { usePreventAccidentalBack } from "@/lib/hooks/usePreventAccidentalBack";
+
 export const isCashAccount = (name?: string | null): boolean => {
   if (!name) return false;
   const norm = name.trim().toUpperCase();
@@ -64,10 +67,23 @@ export const isCashAccount = (name?: string | null): boolean => {
 
 export default function SalesmanDashboardPage() {
   const logout = useLogout();
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Trap browser back button to prevent accidental logout/exit
+  usePreventAccidentalBack(() => {
+    setIsLogoutModalOpen(true);
+  });
 
   const handleLogout = async () => {
-    await logout();
-    window.location.assign("/");
+    try {
+      setIsLoggingOut(true);
+      await logout();
+      setIsLogoutModalOpen(false);
+      window.location.assign("/");
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   // Navigation & view states
@@ -412,7 +428,7 @@ export default function SalesmanDashboardPage() {
               </button> */}
 
               <button
-                onClick={handleLogout}
+                onClick={() => setIsLogoutModalOpen(true)}
                 className="p-2 text-slate-500 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
                 aria-label="Sign out"
                 title="Sign out"
@@ -1407,6 +1423,14 @@ export default function SalesmanDashboardPage() {
             </button>
           </nav>
         )}
+
+        {/* Logout Confirmation Modal */}
+        <LogoutConfirmModal
+          isOpen={isLogoutModalOpen}
+          onClose={() => setIsLogoutModalOpen(false)}
+          onConfirm={handleLogout}
+          isLoggingOut={isLoggingOut}
+        />
       </div>
     </AuthGuard>
   );

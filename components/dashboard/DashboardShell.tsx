@@ -46,6 +46,9 @@ const DEFAULT_ADMIN_NAV: NavItem[] = [
   { label: "Outstanding", icon: <Clock className="w-5 h-5" />, id: "outstanding" },
 ];
 
+import { LogoutConfirmModal } from "./LogoutConfirmModal";
+import { usePreventAccidentalBack } from "@/lib/hooks/usePreventAccidentalBack";
+
 export const DashboardShell: React.FC<DashboardShellProps> = ({
   children,
   activePage,
@@ -60,6 +63,12 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   const logout = useLogout();
   const isLoading = useAuthLoading();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  // Trap browser back button to prevent accidental logout/exit
+  usePreventAccidentalBack(() => {
+    setIsLogoutModalOpen(true);
+  });
 
   // Initialize the dashboard store when the shell mounts (i.e. on every login).
   // This fetches customers, salesmen, invoices, etc. from Supabase.
@@ -87,7 +96,8 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
 
   const handleLogout = async () => {
     await logout();
-    router.replace("/");
+    setIsLogoutModalOpen(false);
+    window.location.assign("/");
   };
 
   return (
@@ -182,7 +192,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
               </div>
             </div>
             <button
-              onClick={handleLogout}
+              onClick={() => setIsLogoutModalOpen(true)}
               disabled={isLoading}
               className="text-[#BAC8FF]/80 hover:text-red-300 p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
               title="Sign Out"
@@ -227,10 +237,14 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
               <span>Quick Add</span>
             </button>
 
-            {/* User Avatar */}
-            <div className="w-8 h-8 rounded-full border border-[#BDC9C6] bg-teal-brand text-white text-xs font-bold flex items-center justify-center shadow-2xs ml-2">
+            {/* User Avatar with click to sign out */}
+            <button
+              onClick={() => setIsLogoutModalOpen(true)}
+              title="Sign Out"
+              className="w-8 h-8 rounded-full border border-[#BDC9C6] bg-teal-brand text-white text-xs font-bold flex items-center justify-center shadow-2xs ml-2 cursor-pointer hover:ring-2 hover:ring-teal-brand/50 transition-all"
+            >
               {initials}
-            </div>
+            </button>
           </div>
         </header>
 
@@ -239,6 +253,14 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           {children}
         </main>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleLogout}
+        isLoggingOut={isLoading}
+      />
     </div>
   );
 };

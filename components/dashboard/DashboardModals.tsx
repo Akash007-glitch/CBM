@@ -743,9 +743,9 @@ export const SalesmenView: React.FC = () => {
                     {sm.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </div>
-                <h3 className="text-lg font-bold text-[#0B1C30] mt-3">{sm.name}</h3>
+                <h3 className="text-lg font-bold text-[#0B1C30] mt-3">{sm.profiles?.full_name || sm.name}</h3>
                 <div className="text-xs text-[#3E4947] mt-1 space-y-0.5">
-                  <p>{sm.email || "No email provided"}</p>
+                  <p>{sm.email || sm.profiles?.email || "No email provided"}</p>
                   <p>{sm.phone || "No phone provided"}</p>
                 </div>
               </div>
@@ -881,7 +881,7 @@ export const CollectionsView: React.FC<{
       case "upi":
         return {
           bg: "bg-indigo-50 border-indigo-200 text-indigo-700",
-          icon: "⚡",
+          icon: "",
           label: "UPI",
         };
       case "bank_transfer":
@@ -915,6 +915,7 @@ export const CollectionsView: React.FC<{
     if (!selectedPaymentForReceipt) return;
     const cust = customers.find((c) => c.id === selectedPaymentForReceipt.customer_id);
     const sm = salesmen.find((s) => s.id === selectedPaymentForReceipt.salesman_id);
+    const smName = sm?.profiles?.full_name || sm?.name || "Admin / Direct";
     const text = `
 ========================================
 SUBH ENTERPRISE - PAYMENT RECEIPT
@@ -922,7 +923,7 @@ SUBH ENTERPRISE - PAYMENT RECEIPT
 Receipt #    : ${selectedPaymentForReceipt.payment_number || selectedPaymentForReceipt.id.slice(0, 8)}
 Date         : ${new Date(selectedPaymentForReceipt.payment_date).toLocaleDateString("en-IN")}
 Customer     : ${cust?.name || "Customer"}
-Salesman     : ${sm?.name || "Admin / Direct"}
+Salesman     : ${smName}
 Amount Paid  : ₹${Number(selectedPaymentForReceipt.amount).toLocaleString("en-IN")}
 Payment Mode : ${selectedPaymentForReceipt.payment_method.toUpperCase()}
 Reference #  : ${selectedPaymentForReceipt.reference_number || "N/A"}
@@ -1121,6 +1122,7 @@ Reference #  : ${selectedPaymentForReceipt.reference_number || "N/A"}
                   (p as PaymentRow & { customers?: { name: string } | null }).customers?.name ??
                   "Unknown Customer";
                 const smName =
+                  sm?.profiles?.full_name ??
                   sm?.name ??
                   (p as PaymentRow & { salesmen?: { name: string } | null }).salesmen?.name ??
                   "Admin / Direct";
@@ -1254,8 +1256,10 @@ Reference #  : ${selectedPaymentForReceipt.reference_number || "N/A"}
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500 font-semibold">Collector / Salesman</span>
                   <span className="font-medium text-slate-800">
-                    {salesmen.find((s) => s.id === selectedPaymentForReceipt.salesman_id)?.name ||
-                      "Admin / Direct"}
+                    {(() => {
+                      const sm = salesmen.find((s) => s.id === selectedPaymentForReceipt.salesman_id);
+                      return sm?.profiles?.full_name || sm?.name || "Admin / Direct";
+                    })()}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">

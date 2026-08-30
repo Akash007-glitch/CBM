@@ -403,7 +403,7 @@ export const CustomerFinancialInspector: React.FC<CustomerFinancialInspectorProp
                 {assignedSalesman && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-[#CBD5E1] text-xs font-semibold text-[#0B1C30] shadow-2xs">
                     <User className="w-3.5 h-3.5 text-teal-brand" />
-                    Salesman: {assignedSalesman.name}
+                    Salesman: {assignedSalesman.profiles?.full_name || assignedSalesman.name}
                   </span>
                 )}
               </div>

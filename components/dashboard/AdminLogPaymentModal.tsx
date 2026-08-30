@@ -365,7 +365,7 @@ export const AdminLogPaymentModal: React.FC<AdminLogPaymentModalProps> = ({
         customerCode: selectedCustomer?.customer_code || selectedCustomer?.id.slice(0, 8) || "N/A",
         customerPhone: selectedCustomer?.phone,
         customerCity: selectedCustomer?.city,
-        salesmanName: salesmanObj?.name || "Admin / Direct",
+        salesmanName: salesmanObj?.profiles?.full_name || salesmanObj?.name || "Admin / Direct",
         amount: enteredAmount,
         paymentMethod: paymentMethod.replace("_", " ").toUpperCase(),
         referenceNumber: referenceNumber.trim() || "N/A",
@@ -840,7 +840,7 @@ Thank you for your payment!
                         selectedCustomer?.assigned_salesman_id === sm.id;
                       return (
                         <option key={sm.id} value={sm.id}>
-                          {sm.name} {sm.employee_code ? `(${sm.employee_code})` : ""}{" "}
+                          {sm.profiles?.full_name || sm.name} {sm.employee_code ? `(${sm.employee_code})` : ""}{" "}
                           {isAssigned ? "★ (Assigned)" : ""}
                         </option>
                       );
@@ -1239,7 +1239,10 @@ Thank you for your payment!
                   <div className="flex justify-between items-center">
                     <span className="font-semibold text-slate-600">Collector / Salesman</span>
                     <span className="font-medium text-slate-800">
-                      {salesmen.find((s) => s.id === selectedSalesmanId)?.name || "Direct"}
+                      {(() => {
+                        const sm = salesmen.find((s) => s.id === selectedSalesmanId);
+                        return sm?.profiles?.full_name || sm?.name || "Direct";
+                      })()}
                     </span>
                   </div>
 
