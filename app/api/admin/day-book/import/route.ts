@@ -39,9 +39,15 @@ export async function POST(request: NextRequest) {
 
     // Prefer service role client for bulk ingestion to bypass RLS bottlenecks
     let dbClient = supabase;
+    let usingAdminClient = false;
     try {
       dbClient = createAdminSupabaseClient();
-    } catch {
+      usingAdminClient = true;
+    } catch (adminClientErr) {
+      console.warn(
+        "[day-book/import] SUPABASE_SERVICE_ROLE_KEY unconfigured or invalid, falling back to authenticated user client:",
+        adminClientErr instanceof Error ? adminClientErr.message : adminClientErr
+      );
       dbClient = supabase;
     }
 
@@ -119,8 +125,12 @@ export async function POST(request: NextRequest) {
 
     if (batchError || !batchData) {
       console.error("[day-book/import] Failed to create import batch:", batchError);
+      const isRlsError = batchError?.message?.toLowerCase().includes("row-level security");
+      const errorDetail = !usingAdminClient && isRlsError
+        ? `${batchError?.message}. Please configure SUPABASE_SERVICE_ROLE_KEY in .env or run migration 024 in Supabase SQL editor.`
+        : (batchError?.message || "Unknown error");
       return NextResponse.json(
-        { error: `Failed to initialize import batch: ${batchError?.message || "Unknown error"}` },
+        { error: `Failed to initialize import batch: ${errorDetail}` },
         { status: 500 }
       );
     }
